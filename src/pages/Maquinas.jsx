@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTable } from '../hooks/useTable'
 import { Err, Field, Page, formData } from '../components'
 import { COSTO_MAQUINA, hoy, money, sum } from '../lib/calc'
-
-const nextCode = (rows) => 'CH' + String(Math.max(0, ...rows.map((r) => parseInt(r.codigo.slice(2)) || 0)) + 1).padStart(3, '0')
 
 export default function Maquinas() {
   const m = useTable('maquinas'), n = useTable('negocios'), r = useTable('revisiones')
@@ -29,12 +28,20 @@ export default function Maquinas() {
   }
 
   return (
-    <Page title="Máquinas" actions={<button onClick={() => setEd({})}>Nueva máquina</button>}>
+    <Page
+      title="Máquinas"
+      actions={
+        <Link to="/compras" className="btn alt" title="Las máquinas se crean automáticamente al registrar su compra">
+          🛒 Adquirir máquina en Compras
+        </Link>
+      }
+    >
       <Err e={m.error} />
       {ed && (
         <div className="card">
-          <form className="f" key={ed.id || 'new'} onSubmit={save}>
-            <Field label="Código de serie" name="codigo" defaultValue={ed.codigo || nextCode(m.rows)} pattern="CH[0-9]{3,}" required />
+          <h3>Editar máquina: {ed.codigo}</h3>
+          <form className="f" key={ed.id} onSubmit={save}>
+            <Field label="Código de serie" name="codigo" defaultValue={ed.codigo} pattern="CH[0-9]{3,}" required />
             <Field label="Costo (S/)" name="costo" type="number" step="0.01" defaultValue={ed.costo ?? COSTO_MAQUINA} required />
             <label>
               Estado
@@ -47,7 +54,7 @@ export default function Maquinas() {
             <Field label="Fecha de compra" name="fecha_compra" type="date" defaultValue={ed.fecha_compra || hoy()} />
             <Field label="Notas" name="notas" defaultValue={ed.notas || ''} />
             <div className="acts">
-              <button>Guardar</button>
+              <button>Guardar cambios</button>
               <button type="button" className="alt" onClick={() => setEd(null)}>
                 Cancelar
               </button>
@@ -55,19 +62,26 @@ export default function Maquinas() {
           </form>
         </div>
       )}
+
       <div className="card">
         {!m.rows.length ? (
-          <p className="empty">Todavía no registraste máquinas. Pulsa Nueva máquina.</p>
+          <div className="empty-box">
+            <p className="empty">Todavía no registraste máquinas en tu inventario.</p>
+            <p className="sub-text">Las máquinas se dan de alta automáticamente cuando registras su compra para mantener la contabilidad exacta.</p>
+            <Link to="/compras" className="btn">
+              ➕ Registrar primera máquina en Compras
+            </Link>
+          </div>
         ) : (
           <table>
             <thead>
               <tr>
                 <th>Código</th>
                 <th>Estado</th>
-                <th>Negocio</th>
+                <th>Negocio asignado</th>
                 <th className="n">Costo</th>
-                <th className="n">Rendimiento</th>
-                <th className="n">Mi neta</th>
+                <th className="n">Recaudado</th>
+                <th className="n">Mi ganancia neta</th>
                 <th>Inversión recuperada</th>
                 <th>Acciones</th>
               </tr>
@@ -86,10 +100,18 @@ export default function Maquinas() {
                         {x.estado}
                       </span>
                     </td>
-                    <td>{neg?.negocio || '—'}</td>
+                    <td>
+                      {neg ? (
+                        <Link to={`/negocios/${neg.id}/revisiones`} className="text-link">
+                          {neg.negocio}
+                        </Link>
+                      ) : (
+                        <span className="pill warn">Sin negocio</span>
+                      )}
+                    </td>
                     <td className="n">{money(x.costo)}</td>
                     <td className="n">{money(sum(rv, 'recaudo'))}</td>
-                    <td className="n">{money(neta)}</td>
+                    <td className="n text-ok">{money(neta)}</td>
                     <td>
                       <div className="bar"><i style={{ width: `${pct}%` }} /></div>
                       {(x.costo ? (neta / x.costo) * 100 : 0).toFixed(0)}%
