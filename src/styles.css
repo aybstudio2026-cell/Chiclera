@@ -819,3 +819,32 @@ button.del { background: #fff; color: #dc2626; border: 1.5px solid #fecaca; }
   margin: 4px 0;
 }
 
+/* ===== Vista Máquinas: ROI de flota y tarjetas por máquina ===== */
+.roi-global-card { background: linear-gradient(135deg, #fff 0%, #fbf7ff 100%); }
+.roi-global-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.roi-global-title { margin: 0 0 2px; font-size: 18px; }
+.roi-global-pct { font-family: Fredoka, sans-serif; font-size: 40px; font-weight: 600; line-height: 1; }
+.roi-global-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.roi-stat-item { display: flex; flex-direction: column; gap: 2px; background: var(--bg); border-radius: 12px; padding: 12px 14px; }
+.roi-stat-item span { font-size: 13px; color: var(--mute); }
+.roi-stat-item b { font-size: 20px; font-family: Fredoka, sans-serif; }
+.roi-global-card .bar, .maquina-roi-card .bar { display: block; width: 100%; margin-right: 0; }
+.roi-paid-badge { margin-top: 12px; padding: 10px 14px; background: var(--teal-light); color: #0b6b5d; border-radius: 10px; font-weight: 600; }
+.empty-box { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 30px 10px; }
+
+.maquinas-roi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.maquina-roi-card { display: flex; flex-direction: column; gap: 12px; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); }
+.maquina-roi-card.paid-off { border-color: #10b981; background: #f3fcf9; }
+.mroi-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.mroi-codigo { font-family: Fredoka, sans-serif; font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+.mroi-pct-circle { flex: none; width: 58px; height: 58px; border: 4px solid; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; background: #fff; }
+.mroi-negocio { font-size: 14px; }
+.mroi-stats { display: flex; flex-direction: column; gap: 2px; }
+.mroi-stat { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 7px 0; font-size: 14px; border-bottom: 1px dashed var(--line); }
+.mroi-stat:last-child { border-bottom: 0; }
+.mroi-stat span { color: var(--mute); }
+.mroi-eta { font-size: 13px; color: var(--mute); background: var(--bg); padding: 7px 10px; border-radius: 8px; }
+.mroi-eta.paid { background: var(--teal-light); color: #0b6b5d; font-weight: 600; }
+.mroi-actions { display: flex; gap: 8px; margin-top: auto; }
+.mroi-actions > * { flex: 1; text-align: center; }
+@media (max-width: 600px) { .maquinas-roi-grid { grid-template-columns: 1fr; } .roi-global-pct { font-size: 32px; } }

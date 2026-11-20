@@ -30,7 +30,11 @@ export default function Maquinas() {
       const rv = neg ? (revisionesPorNegocio.get(neg.id) || []) : []
       return acc + sum(rv, 'ganancia_neta')
     }, 0)
-    return { totalInvertido, totalNeta, pct: totalInvertido > 0 ? Math.min(100, (totalNeta / totalInvertido) * 100) : 0 }
+    return {
+      totalInvertido,
+      totalNeta,
+      pct: totalInvertido > 0 ? Math.max(0, Math.min(100, (totalNeta / totalInvertido) * 100)) : 0,
+    }
   }, [m.rows, negociosPorMaquina, revisionesPorNegocio])
 
   const save = async (e) => {
@@ -133,7 +137,7 @@ export default function Maquinas() {
                 const neta = sum(rv, 'ganancia_neta')
                 const recaudo = sum(rv, 'recaudo')
                 const costo = x.costo || COSTO_MAQUINA
-                const pct = Math.min(100, (neta / costo) * 100)
+                const pct = Math.max(0, Math.min(100, (neta / costo) * 100))
                 const faltaRecuperar = Math.max(0, costo - neta)
 
                 // Estimar semanas restantes para recuperar la inversión
