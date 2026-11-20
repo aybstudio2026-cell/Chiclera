@@ -1,7 +1,10 @@
 -- ChicleControl: ejecutar completo en Supabase > SQL Editor
+-- Todo queda dentro del schema "chiclera" (no en public).
 create extension if not exists pgcrypto;
 
-create table public.maquinas (
+create schema if not exists chiclera;
+
+create table chiclera.maquinas (
   id uuid primary key default gen_random_uuid(),
   codigo text unique not null check (codigo ~ '^CH[0-9]{3,}$'),
   costo numeric(10,2) not null default 310,
@@ -11,20 +14,20 @@ create table public.maquinas (
   created_at timestamptz not null default now()
 );
 
-create table public.negocios (
+create table chiclera.negocios (
   id uuid primary key default gen_random_uuid(),
   negocio text not null,
   dueno text not null,
   telefono text,
   direccion text,
-  maquina_id uuid unique references public.maquinas(id) on delete set null,
+  maquina_id uuid unique references chiclera.maquinas(id) on delete set null,
   fecha_instalacion date not null default current_date,
   created_at timestamptz not null default now()
 );
 
-create table public.revisiones (
+create table chiclera.revisiones (
   id uuid primary key default gen_random_uuid(),
-  negocio_id uuid not null references public.negocios(id) on delete cascade,
+  negocio_id uuid not null references chiclera.negocios(id) on delete cascade,
   fecha date not null default current_date,
   recaudo numeric(10,2) not null,                      -- dinero sacado de la máquina
   inversion_chicles numeric(10,2) not null default 0,  -- costo de los chicles repuestos
@@ -35,7 +38,7 @@ create table public.revisiones (
   created_at timestamptz not null default now()
 );
 
-create table public.compras (
+create table chiclera.compras (
   id uuid primary key default gen_random_uuid(),
   tipo text not null check (tipo in ('maquina','chicles')),
   codigo text,
@@ -46,7 +49,14 @@ create table public.compras (
   created_at timestamptz not null default now()
 );
 
-create index on public.revisiones (negocio_id, fecha);
+create index on chiclera.revisiones (negocio_id, fecha);
+
+-- Permisos para que la API de Supabase pueda usar el schema
+grant usage on schema chiclera to anon, authenticated, service_role;
+grant all on all tables in schema chiclera to anon, authenticated, service_role;
+grant all on all sequences in schema chiclera to anon, authenticated, service_role;
+alter default privileges in schema chiclera grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema chiclera grant all on sequences to anon, authenticated, service_role;
 
 -- Seguridad (RLS). INICIO RÁPIDO: acceso abierto con la anon key.
 -- Cualquiera con tu anon key podría leer/editar. Antes de publicar, agrega
@@ -55,7 +65,12 @@ do $$
 declare t text;
 begin
   foreach t in array array['maquinas','negocios','revisiones','compras'] loop
-    execute format('alter table public.%I enable row level security', t);
-    execute format('create policy "acceso_%1$s" on public.%1$I for all to anon, authenticated using (true) with check (true)', t);
+    execute format('alter table chiclera.%I enable row level security', t);
+    execute format('create policy "acceso_%1$s" on chiclera.%1$I for all to anon, authenticated using (true) with check (true)', t);
   end loop;
 end $$;
+
+-- PASOS EXTRA (obligatorios):
+-- 1) Supabase > Project Settings > API > "Exposed schemas": agrega "chiclera" y guarda.
+-- 2) En src/lib/db.js crea el cliente así:
+--    createClient(url, key, { db: { schema: 'chiclera' } })

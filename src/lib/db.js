@@ -12,25 +12,75 @@ const ls = (t) => JSON.parse(localStorage.getItem('chicle_' + t) || '[]')
 const save = (t, rows) => localStorage.setItem('chicle_' + t, JSON.stringify(rows))
 const check = ({ data, error }) => { if (error) throw error; return data }
 
+// Caché en memoria y bus de suscripción para sincronizar vistas al instante sin re-peticiones innecesarias
+const cache = new Map()
+const listeners = new Map()
+
+export const invalidateTable = (...tables) => {
+  tables.forEach((t) => {
+    cache.delete(t)
+    if (listeners.has(t)) {
+      listeners.get(t).forEach((cb) => cb())
+    }
+  })
+}
+
+export const subscribeTable = (t, cb) => {
+  if (!listeners.has(t)) listeners.set(t, new Set())
+  listeners.get(t).add(cb)
+  return () => {
+    const s = listeners.get(t)
+    if (s) s.delete(cb)
+  }
+}
+
+export const getCachedTable = (t) => cache.get(t)
+
 export const db = {
-  async list(t) {
-    if (supabase) return check(await supabase.from(t).select('*').order('created_at'))
-    return ls(t)
+  async list(t, forceRefresh = false) {
+    if (!forceRefresh && cache.has(t)) {
+      return cache.get(t)
+    }
+    let data
+    if (supabase) {
+      data = check(await supabase.from(t).select('*').order('created_at'))
+    } else {
+      data = ls(t)
+    }
+    cache.set(t, data)
+    return data
   },
   async insert(t, row) {
-    if (supabase) return check(await supabase.from(t).insert(row).select().single())
-    const r = { ...row, id: crypto.randomUUID(), created_at: new Date().toISOString() }
-    save(t, [...ls(t), r])
+    let r
+    if (supabase) {
+      r = check(await supabase.from(t).insert(row).select().single())
+    } else {
+      r = { ...row, id: crypto.randomUUID(), created_at: new Date().toISOString() }
+      save(t, [...ls(t), r])
+    }
+    invalidateTable(t)
     return r
   },
   async update(t, id, patch) {
-    if (supabase) return check(await supabase.from(t).update(patch).eq('id', id).select().single())
-    save(t, ls(t).map((r) => (r.id === id ? { ...r, ...patch } : r)))
+    let r
+    if (supabase) {
+      r = check(await supabase.from(t).update(patch).eq('id', id).select().single())
+    } else {
+      save(t, ls(t).map((item) => (item.id === id ? { ...item, ...patch } : item)))
+    }
+    invalidateTable(t)
+    return r
   },
   async remove(t, id) {
-    if (supabase) return check(await supabase.from(t).delete().eq('id', id))
-    save(t, ls(t).filter((r) => r.id !== id))
-    if (t === 'negocios') save('revisiones', ls('revisiones').filter((r) => r.negocio_id !== id))
-    if (t === 'maquinas') save('negocios', ls('negocios').map((n) => (n.maquina_id === id ? { ...n, maquina_id: null } : n)))
+    if (supabase) {
+      check(await supabase.from(t).delete().eq('id', id))
+    } else {
+      save(t, ls(t).filter((item) => item.id !== id))
+      if (t === 'negocios') save('revisiones', ls('revisiones').filter((r) => r.negocio_id !== id))
+      if (t === 'maquinas') save('negocios', ls('negocios').map((n) => (n.maquina_id === id ? { ...n, maquina_id: null } : n)))
+    }
+    if (t === 'negocios') invalidateTable(t, 'revisiones')
+    else if (t === 'maquinas') invalidateTable(t, 'negocios')
+    else invalidateTable(t)
   },
 }

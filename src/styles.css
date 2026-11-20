@@ -18,6 +18,8 @@ main{padding:28px;max-width:1150px;width:100%}
 .stat.hot{background:var(--plum);color:#fff;border:0}.stat.hot span,.stat.hot small{color:#cbbfe3}
 .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:18px;overflow-x:auto}
 .card h3{margin:0 0 10px;font-size:16px}
+.card-header-flex{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.card-header-flex h3{margin:0}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 th{color:var(--mute);font-weight:500;font-size:13px}
@@ -32,11 +34,19 @@ button.del{background:#fff;color:#c0182f;border:1px solid #f1c3ca}
 .acts{display:flex;gap:6px}.acts>*{padding:6px 10px;font-size:13px}
 .err{background:#fde8ec;color:#a0172b;padding:10px 14px;border-radius:10px}
 .empty{color:var(--mute);padding:14px 0}
-.pill{padding:2px 10px;border-radius:99px;font-size:12px;background:#eee9f6}
-.pill.ok{background:#d6f3ee;color:#0b6b5d}.pill.warn{background:#fff1c7;color:#7a5a00}
+.pill{padding:2px 10px;border-radius:99px;font-size:12px;background:#eee9f6;display:inline-block}
+.pill.ok{background:#d6f3ee;color:#0b6b5d}.pill.warn{background:#fff1c7;color:#7a5a00}.pill.info{background:#e0f2fe;color:#0369a1}
 .bar{height:8px;background:var(--line);border-radius:9px;min-width:80px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--teal)}
 .preview{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0 0;color:var(--mute)}.preview b{color:var(--ink)}
+.tel-link{color:var(--teal);text-decoration:none;font-weight:500}.tel-link:hover{text-decoration:underline}
+.text-link{color:var(--berry);text-decoration:none;font-size:13px;font-weight:500}.text-link:hover{text-decoration:underline}
+.text-ok{color:#0b6b5d;font-weight:600}
+.filter-group{display:flex;gap:6px}
+.filter-group button{padding:6px 12px;font-size:13px}
+.active-filter{background:var(--plum);color:#fff}
+.autocomplete-row{margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed var(--line)}
+.loading-state{padding:40px;text-align:center;color:var(--mute);font-size:15px}
 .soon{text-align:center;padding:70px 20px}.soon h2{font-size:34px;margin-bottom:8px}
 .contrato{background:#fff;border:1px solid var(--line);padding:32px;border-radius:14px;line-height:1.7;max-width:780px}
 .contrato h3{margin:18px 0 4px}
