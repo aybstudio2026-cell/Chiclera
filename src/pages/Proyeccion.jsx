@@ -1,44 +1,206 @@
 import { useState } from 'react'
 import { Page, Stat } from '../components'
-import { COSTO_BOLSA, CHICLES_BOLSA, COSTO_MAQUINA, PRECIO_CHICLE, SEMANAS_MES, money } from '../lib/calc'
+import { money } from '../lib/calc'
 
-const campos = [
-  ['maq0', 'Máquinas iniciales'], ['nuevas', 'Máquinas nuevas por mes (con tu dinero)'], ['meses', 'Meses a proyectar'],
-  ['ventas', 'Chicles vendidos por máquina por semana'], ['precio', 'Precio por chicle (S/)'], ['costoChicle', 'Costo por chicle (S/)'],
-  ['costoMaq', 'Costo por máquina (S/)'], ['dueno', '% promedio para el dueño'], ['reinv', '% de mi ganancia que reinvierto en máquinas'],
-]
+// Constantes fijas de tu modelo de negocio
+const PRECIO_CHICLE = 1.00 // S/ 1.00 por chicle vendido
+const COSTO_CHICLE = 90 / 500 // S/ 0.18 por chicle (bolsa de 500 a S/ 90)
+const COSTO_MAQUINA = 310.00 // S/ 310 por máquina chiclera
+const SEMANAS_MES = 4.33 // Promedio de semanas al mes
+const COMISION_DUENO_PROMEDIO = 20 // 20% promedio para los dueños de local
 
 export default function Proyeccion() {
-  const [p, setP] = useState({ maq0: 3, nuevas: 2, meses: 12, ventas: 60, precio: PRECIO_CHICLE, costoChicle: COSTO_BOLSA / CHICLES_BOLSA, costoMaq: COSTO_MAQUINA, dueno: 20, reinv: 50 })
-  const v = Object.fromEntries(Object.entries(p).map(([k, x]) => [k, Number(x) || 0]))
-  let maq = v.maq0, pool = 0, caja = -v.maq0 * v.costoMaq
-  const filas = []
-  for (let mes = 1; mes <= Math.min(60, v.meses); mes++) {
-    const chicles = maq * v.ventas * SEMANAS_MES
-    const ingreso = chicles * v.precio, gan = ingreso - chicles * v.costoChicle
-    const dueno = gan * v.dueno / 100, mia = gan - dueno
-    pool += mia * v.reinv / 100
-    const reinv = Math.floor(pool / v.costoMaq); pool -= reinv * v.costoMaq
-    caja += mia - (reinv + v.nuevas) * v.costoMaq
-    filas.push({ mes, maq, ingreso, dueno, mia, nuevas: reinv + v.nuevas, caja })
-    maq += reinv + v.nuevas
+  const [p, setP] = useState({
+    maq0: 2, // Máquinas iniciales
+    nuevasMes: 1, // Máquinas que compras de tu bolsillo cada mes
+    ventasSemana: 60, // Chicles vendidos por máquina por semana
+    meses: 12, // Meses a proyectar
+    reinv: 50, // % de tu ganancia que reinviertes en más máquinas
+  })
+
+  const v = {
+    maq0: Number(p.maq0) || 1,
+    nuevasMes: Number(p.nuevasMes) || 0,
+    ventasSemana: Number(p.ventasSemana) || 10,
+    meses: Math.min(60, Math.max(1, Number(p.meses) || 12)),
+    reinv: Number(p.reinv) || 0,
   }
+
+  // Simulación mes a mes
+  let maq = v.maq0
+  let poolReinversion = 0
+  let cajaAcumulada = -v.maq0 * COSTO_MAQUINA // Inversión inicial negativa
+  const filas = []
+
+  for (let mes = 1; mes <= v.meses; mes++) {
+    const chiclesVendidos = maq * v.ventasSemana * SEMANAS_MES
+    const ingresoBruto = chiclesVendidos * PRECIO_CHICLE
+    const costoChicles = chiclesVendidos * COSTO_CHICLE
+    const gananciaBase = ingresoBruto - costoChicles
+    const pagoDueno = (gananciaBase * COMISION_DUENO_PROMEDIO) / 100
+    const miGanancia = gananciaBase - pagoDueno
+
+    // Reinversión orgánica en máquinas
+    poolReinversion += (miGanancia * v.reinv) / 100
+    const maqsPorReinversion = Math.floor(poolReinversion / COSTO_MAQUINA)
+    poolReinversion -= maqsPorReinversion * COSTO_MAQUINA
+
+    const maqsNuevasTotales = maqsPorReinversion + v.nuevasMes
+    cajaAcumulada += miGanancia - maqsNuevasTotales * COSTO_MAQUINA
+
+    filas.push({
+      mes,
+      maq,
+      ingresoBruto,
+      pagoDueno,
+      miGanancia,
+      maqsPorReinversion,
+      maqsNuevasTotales,
+      cajaAcumulada,
+    })
+
+    maq += maqsNuevasTotales
+  }
+
   const ult = filas[filas.length - 1]
+
   return (
-    <Page title="Proyección de inversión">
-      <div className="card"><form className="f" onSubmit={(e) => e.preventDefault()}>
-        {campos.map(([k, l]) => <label key={k}>{l}<input type="number" step="any" min="0" value={p[k]} onChange={(e) => setP({ ...p, [k]: e.target.value })} /></label>)}
-      </form></div>
-      {ult && <div className="grid">
-        <Stat label="Máquinas al final" value={ult.maq + ult.nuevas} />
-        <Stat label="Ingreso del último mes" value={money(ult.ingreso)} />
-        <Stat label="Mi ganancia del último mes" value={money(ult.mia)} />
-        <div className="stat hot"><span>Caja acumulada</span><b>{money(ult.caja)}</b><small>ganancias − todas las máquinas compradas</small></div>
-      </div>}
-      <div className="card"><table><thead><tr><th>Mes</th><th className="n">Máquinas</th><th className="n">Ingreso</th><th className="n">Dueños</th><th className="n">Mi ganancia</th><th className="n">Máquinas nuevas</th><th className="n">Caja acumulada</th></tr></thead>
-        <tbody>{filas.map((f) => <tr key={f.mes}><td>{f.mes}</td><td className="n">{f.maq}</td><td className="n">{money(f.ingreso)}</td><td className="n">{money(f.dueno)}</td>
-          <td className="n">{money(f.mia)}</td><td className="n">{f.nuevas}</td><td className="n">{money(f.caja)}</td></tr>)}</tbody></table></div>
-      <p className="empty">Estimación simple: usa un % de dueño promedio y {SEMANAS_MES} semanas por mes. Las máquinas nuevas empiezan a vender el mes siguiente.</p>
+    <Page title="Proyección de Crecimiento del Negocio">
+      {/* Caja de constantes fijas del negocio */}
+      <div className="card" style={{ background: '#f8fafc', borderLeft: '4px solid var(--teal)', padding: '14px 18px' }}>
+        <b style={{ color: 'var(--plum)' }}>⚙️ Parámetros Fijos de tu Operación:</b>
+        <div style={{ display: 'flex', gap: '18px', flexWrap: 'wrap', marginTop: '6px', fontSize: '13px', color: 'var(--mute)' }}>
+          <span>🍬 Venta al público: <b>S/ 1.00 / chicle</b></span>
+          <span>📦 Costo insumo: <b>S/ 0.18 / chicle</b> (bolsa S/ 90)</span>
+          <span>🎰 Costo por máquina: <b>S/ 310.00</b></span>
+          <span>🤝 Comisión dueño: <b>20% sobre ganancia</b></span>
+        </div>
+      </div>
+
+      {/* Formulario de Parámetros de Crecimiento */}
+      <div className="card">
+        <h3>Simula tus Objetivos de Crecimiento</h3>
+        <form className="f" onSubmit={(e) => e.preventDefault()}>
+          <label>
+            Máquinas instaladas hoy
+            <input
+              type="number"
+              min="1"
+              value={p.maq0}
+              onChange={(e) => setP({ ...p, maq0: e.target.value })}
+            />
+          </label>
+
+          <label>
+            Máquinas nuevas por mes (de tu bolsillo)
+            <input
+              type="number"
+              min="0"
+              value={p.nuevasMes}
+              onChange={(e) => setP({ ...p, nuevasMes: e.target.value })}
+            />
+          </label>
+
+          <label>
+            Chicles vendidos por máquina a la semana
+            <input
+              type="number"
+              min="10"
+              value={p.ventasSemana}
+              onChange={(e) => setP({ ...p, ventasSemana: e.target.value })}
+            />
+          </label>
+
+          <label>
+            % de tu ganancia que reinviertes en más máquinas
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={p.reinv}
+              onChange={(e) => setP({ ...p, reinv: e.target.value })}
+            />
+          </label>
+
+          <label>
+            Tiempo a proyectar (Meses)
+            <select value={p.meses} onChange={(e) => setP({ ...p, meses: e.target.value })}>
+              <option value="6">6 meses</option>
+              <option value="12">12 meses (1 año)</option>
+              <option value="18">18 meses (1.5 años)</option>
+              <option value="24">24 meses (2 años)</option>
+              <option value="36">36 meses (3 años)</option>
+            </select>
+          </label>
+        </form>
+      </div>
+
+      {/* Tarjetas de Resultado al Final del Periodo */}
+      {ult && (
+        <div className="grid">
+          <Stat
+            label={`Máquinas al mes ${v.meses}`}
+            value={ult.maq + ult.maqsNuevasTotales}
+            sub={`${v.maq0} iniciales → ${ult.maq + ult.maqsNuevasTotales} finales`}
+          />
+          <Stat
+            label="Recaudación mensual final"
+            value={money(ult.ingresoBruto)}
+            sub={`en el mes ${v.meses}`}
+          />
+          <Stat
+            label="Tu ganancia neta mensual final"
+            value={money(ult.miGanancia)}
+            sub="cada mes de forma pasiva"
+          />
+          <div className="stat hot">
+            <span>Caja Neta Acumulada</span>
+            <b>{money(ult.cajaAcumulada)}</b>
+            <small>ganancias totales − todas las máquinas compradas</small>
+          </div>
+        </div>
+      )}
+
+      {/* Tabla detallada mes a mes */}
+      <div className="card">
+        <h3>Evolución Financiera Mes a Mes</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th className="n">Máquinas en Ruta</th>
+              <th className="n">Recaudo Bruto</th>
+              <th className="n">Pago a Dueños</th>
+              <th className="n">Tu Ganancia Neta</th>
+              <th className="n">Nuevas Máquinas</th>
+              <th className="n">Caja Acumulada</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filas.map((f) => (
+              <tr key={f.mes}>
+                <td><b>Mes {f.mes}</b></td>
+                <td className="n">{f.maq} máquinas</td>
+                <td className="n">{money(f.ingresoBruto)}</td>
+                <td className="n">{money(f.pagoDueno)}</td>
+                <td className="n text-ok"><b>{money(f.miGanancia)}</b></td>
+                <td className="n">
+                  {f.maqsNuevasTotales > 0 ? (
+                    <span className="pill ok">+{f.maqsNuevasTotales} máq</span>
+                  ) : (
+                    '0'
+                  )}
+                </td>
+                <td className="n">
+                  <b style={{ color: f.cajaAcumulada >= 0 ? '#059669' : '#dc2626' }}>
+                    {money(f.cajaAcumulada)}
+                  </b>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Page>
   )
 }

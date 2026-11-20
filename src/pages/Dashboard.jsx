@@ -19,39 +19,51 @@ export default function Dashboard() {
     const inversionChicles = sum(r.rows, 'inversion_chicles')
     const parteDueno = sum(r.rows, 'parte_dueno')
     const totalComprado = sum(c.rows, 'costo_total')
-    const margenNeto = recaudoTotal > 0 ? (neta / recaudoTotal) * 100 : 0
-    const promedioPorRevision = r.rows.length > 0 ? recaudoTotal / r.rows.length : 0
+    const balance = neta - totalComprado // Todo lo que gano menos todo lo que invierto
 
     return {
       inst,
-      costoMaq,
       neta,
       recup,
       recaudoTotal,
       inversionChicles,
       parteDueno,
       totalComprado,
-      margenNeto,
-      promedioPorRevision,
+      balance,
     }
   }, [m.rows, r.rows, c.rows])
 
-  // Últimas revisiones cronológicas
+  // Últimas revisiones individuales para la tabla
   const ultimas = useMemo(
     () => [...r.rows].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 7),
     [r.rows]
   )
 
-  // Datos para el gráfico de barras (últimas 8 revisiones en orden cronológico)
+  // AGRUPADO POR DÍA (FECHA) para el gráfico de barras: junta todo lo recaudado en el mismo día
   const chartData = useMemo(() => {
-    const sorted = [...r.rows].sort((a, b) => a.fecha.localeCompare(b.fecha)).slice(-8)
-    return sorted.map((item) => ({
-      id: item.id,
-      fecha: item.fecha.slice(5), // mm-dd
-      fechaCompleta: item.fecha,
-      negocio: negociosMap.get(item.negocio_id) || 'Negocio',
-      recaudo: Number(item.recaudo) || 0,
-      neta: Number(item.ganancia_neta) || 0,
+    const porFecha = new Map()
+    const sorted = [...r.rows].sort((a, b) => a.fecha.localeCompare(b.fecha))
+
+    sorted.forEach((item) => {
+      const fecha = item.fecha
+      const prev = porFecha.get(fecha) || { recaudo: 0, neta: 0, count: 0, locales: [] }
+      const nombreLocal = negociosMap.get(item.negocio_id) || 'Local'
+      porFecha.set(fecha, {
+        recaudo: prev.recaudo + (Number(item.recaudo) || 0),
+        neta: prev.neta + (Number(item.ganancia_neta) || 0),
+        count: prev.count + 1,
+        locales: prev.locales.includes(nombreLocal) ? prev.locales : [...prev.locales, nombreLocal],
+      })
+    })
+
+    return Array.from(porFecha.entries()).slice(-10).map(([fecha, d]) => ({
+      id: fecha,
+      fecha: fecha.slice(5), // mm-dd para el eje X
+      fechaCompleta: fecha,
+      recaudo: d.recaudo,
+      neta: d.neta,
+      count: d.count,
+      localesStr: d.locales.join(', '),
     }))
   }, [r.rows, negociosMap])
 
@@ -59,16 +71,15 @@ export default function Dashboard() {
   const rankingNegocios = useMemo(() => {
     const agrupado = new Map()
     r.rows.forEach((rv) => {
-      const prev = agrupado.get(rv.negocio_id) || { recaudo: 0, neta: 0, count: 0 }
+      const prev = agrupado.get(rv.negocio_id) || { recaudo: 0, neta: 0 }
       agrupado.set(rv.negocio_id, {
         recaudo: prev.recaudo + Number(rv.recaudo || 0),
         neta: prev.neta + Number(rv.ganancia_neta || 0),
-        count: prev.count + 1,
       })
     })
 
     const lista = n.rows.map((neg) => {
-      const data = agrupado.get(neg.id) || { recaudo: 0, neta: 0, count: 0 }
+      const data = agrupado.get(neg.id) || { recaudo: 0, neta: 0 }
       return {
         id: neg.id,
         nombre: neg.negocio,
@@ -84,14 +95,13 @@ export default function Dashboard() {
     }
   }, [n.rows, r.rows])
 
-  // Gráfico de Dona: Distribución del dinero recaudado
+  // Gráfico de Dona: Distribución del dinero
   const donutData = useMemo(() => {
     const total = stats.recaudoTotal || 1
     const pNeta = (stats.neta / total) * 100
     const pDueno = (stats.parteDueno / total) * 100
     const pChicles = (stats.inversionChicles / total) * 100
 
-    // Cálculo de ángulos SVG (stroke-dasharray para círculo r=40, circunf=251.32)
     const C = 2 * Math.PI * 40
     const dashNeta = (pNeta / 100) * C
     const dashDueno = (pDueno / 100) * C
@@ -104,40 +114,57 @@ export default function Dashboard() {
     return { C, pNeta, pDueno, pChicles, dashNeta, dashDueno, dashChicles, offsetNeta, offsetDueno, offsetChicles }
   }, [stats])
 
-  // Escala para el gráfico de barras
   const maxBarValue = Math.max(10, ...chartData.map((d) => Math.max(d.recaudo, d.neta)))
 
   return (
     <Page title="Dashboard General">
       <Err e={m.error || n.error || r.error || c.error} />
 
-      {/* Grid de métricas clave */}
-      <div className="grid">
-        <Stat label="🎰 Máquinas" value={m.rows.length} sub={`${stats.inst} instaladas en negocios`} />
-        <Stat label="🏪 Negocios socios" value={n.rows.length} />
-        <Stat label="💵 Recaudado total" value={money(stats.recaudoTotal)} sub={`Promedio ${money(stats.promedioPorRevision)} / visita`} />
-        <Stat label="🍬 Inversión en chicles" value={money(stats.inversionChicles)} />
-        <Stat label="🤝 Pagado a dueños" value={money(stats.parteDueno)} />
+      {/* Grid de 4 métricas esenciales limpias en 1 sola fila */}
+      <div className="grid dashboard-main-grid">
+        <div className={`stat ${stats.balance >= 0 ? 'stat-balance-pos' : 'stat-balance-neg'}`}>
+          <span>⚖️ Balance Real (Ganado − Invertido)</span>
+          <b className="stat-balance-value">
+            {stats.balance >= 0 ? `+${money(stats.balance)}` : `-${money(Math.abs(stats.balance))}`}
+          </b>
+          <small>
+            {stats.balance >= 0
+              ? '🎉 ¡Negocio en ganancia neta total!'
+              : `Faltan ${money(Math.abs(stats.balance))} para recuperar inversión inicial`}
+          </small>
+        </div>
+
         <div className="stat hot">
-          <span>🚀 Mi ganancia neta</span>
+          <span>🚀 Mi Ganancia Neta</span>
           <b>{money(stats.neta)}</b>
           <small>{stats.recup.toFixed(1)}% de inversión en máquinas recuperada</small>
         </div>
-        <Stat label="📈 Margen neto" value={`${stats.margenNeto.toFixed(1)}%`} sub="de cada S/ 100 recaudados" />
+
+        <Stat
+          label="💵 Total Recaudado en Máquinas"
+          value={money(stats.recaudoTotal)}
+          sub={`${r.rows.length} visitas acumuladas`}
+        />
+
+        <Stat
+          label="🛒 Total Invertido (Compras)"
+          value={money(stats.totalComprado)}
+          sub={`${m.rows.length} máquinas adquiridas`}
+        />
       </div>
 
-      {/* Sección de Gráficos */}
+      {/* Gráficos Principales */}
       <div className="dashboard-charts-grid">
-        {/* Gráfico 1: Evolución de Revisiones */}
+        {/* Gráfico 1: Evolución de Recaudaciones AGRUPADO POR DÍA */}
         <div className="card chart-card">
           <div className="card-header-flex">
             <div>
-              <h3>📊 Recaudación vs Mi Ganancia Neta</h3>
-              <small className="sub-text">Últimas revisiones registradas</small>
+              <h3>📊 Recaudación vs Mi Neta (Por Día)</h3>
+              <small className="sub-text">Total acumulado por fecha de visitas</small>
             </div>
             <div className="chart-legend">
-              <span className="legend-item"><i className="dot recaudo" /> Recaudo</span>
-              <span className="legend-item"><i className="dot neta" /> Mi neta</span>
+              <span className="legend-item"><i className="dot recaudo" /> Recaudo día</span>
+              <span className="legend-item"><i className="dot neta" /> Mi neta día</span>
             </div>
           </div>
 
@@ -146,19 +173,16 @@ export default function Dashboard() {
           ) : (
             <div className="svg-chart-wrapper">
               <svg viewBox="0 0 500 210" className="bar-chart-svg">
-                {/* Líneas guía de fondo */}
                 <line x1="40" y1="30" x2="480" y2="30" stroke="#eee9f6" strokeDasharray="3 3" />
                 <line x1="40" y1="95" x2="480" y2="95" stroke="#eee9f6" strokeDasharray="3 3" />
                 <line x1="40" y1="160" x2="480" y2="160" stroke="#e4dfee" />
 
-                {/* Etiquetas de escala Y */}
                 <text x="35" y="35" textAnchor="end" className="chart-label">{money(maxBarValue)}</text>
                 <text x="35" y="100" textAnchor="end" className="chart-label">{money(maxBarValue / 2)}</text>
                 <text x="35" y="165" textAnchor="end" className="chart-label">S/ 0</text>
 
-                {/* Barras por revisión */}
                 {chartData.map((d, i) => {
-                  const step = 420 / chartData.length
+                  const step = 420 / Math.max(1, chartData.length)
                   const xBase = 55 + i * step
                   const hRecaudo = (d.recaudo / maxBarValue) * 130
                   const hNeta = (d.neta / maxBarValue) * 130
@@ -172,26 +196,23 @@ export default function Dashboard() {
                       onMouseEnter={() => setHoveredBar(d)}
                       onMouseLeave={() => setHoveredBar(null)}
                     >
-                      {/* Barra Recaudo */}
                       <rect
                         x={xBase}
                         y={yRecaudo}
-                        width="14"
+                        width="16"
                         height={Math.max(2, hRecaudo)}
                         rx="4"
                         className="bar-recaudo"
                       />
-                      {/* Barra Neta */}
                       <rect
-                        x={xBase + 16}
+                        x={xBase + 18}
                         y={yNeta}
-                        width="14"
+                        width="16"
                         height={Math.max(2, hNeta)}
                         rx="4"
                         className="bar-neta"
                       />
-                      {/* Etiqueta X */}
-                      <text x={xBase + 15} y="180" textAnchor="middle" className="chart-label-x">
+                      <text x={xBase + 17} y="180" textAnchor="middle" className="chart-label-x">
                         {d.fecha}
                       </text>
                     </g>
@@ -199,19 +220,19 @@ export default function Dashboard() {
                 })}
               </svg>
 
-              {/* Tooltip al pasar el cursor */}
               {hoveredBar && (
                 <div className="chart-tooltip">
-                  <b>{hoveredBar.negocio}</b> ({hoveredBar.fechaCompleta})
-                  <div>Recaudo: <b>{money(hoveredBar.recaudo)}</b></div>
-                  <div className="text-ok">Mi neta: <b>{money(hoveredBar.neta)}</b></div>
+                  <b>📅 {hoveredBar.fechaCompleta}</b> ({hoveredBar.count} {hoveredBar.count === 1 ? 'visita' : 'visitas'})
+                  <div style={{ fontSize: '11px', color: '#cbbfe3', margin: '2px 0' }}>{hoveredBar.localesStr}</div>
+                  <div>Recaudo total del día: <b>{money(hoveredBar.recaudo)}</b></div>
+                  <div className="text-ok">Mi neta total del día: <b>{money(hoveredBar.neta)}</b></div>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Gráfico 2: Reparto del Dinero Recaudado */}
+        {/* Gráfico 2: Reparto del Dinero */}
         <div className="card chart-card">
           <div className="card-header-flex">
             <div>
@@ -227,7 +248,6 @@ export default function Dashboard() {
               <div className="donut-svg-wrapper">
                 <svg viewBox="0 0 100 100" className="donut-svg">
                   <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f6f4fa" strokeWidth="16" />
-                  {/* Segmento: Mi neta (Verde/Teal) */}
                   <circle
                     cx="50"
                     cy="50"
@@ -239,7 +259,6 @@ export default function Dashboard() {
                     strokeDashoffset={donutData.offsetNeta}
                     className="donut-segment"
                   />
-                  {/* Segmento: Dueño (Morado) */}
                   <circle
                     cx="50"
                     cy="50"
@@ -251,7 +270,6 @@ export default function Dashboard() {
                     strokeDashoffset={donutData.offsetDueno}
                     className="donut-segment"
                   />
-                  {/* Segmento: Inversión en Chicles (Amarillo) */}
                   <circle
                     cx="50"
                     cy="50"
@@ -300,7 +318,6 @@ export default function Dashboard() {
 
       {/* Sección inferior: Ranking de Negocios y Últimas Revisiones */}
       <div className="dashboard-bottom-grid">
-        {/* Ranking de negocios más rentables */}
         <div className="card">
           <div className="card-header-flex">
             <h3>🏆 Negocios más Rentables</h3>
@@ -332,11 +349,10 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Tabla de últimas revisiones */}
         <div className="card">
           <div className="card-header-flex">
-            <h3>🕒 Últimas Revisiones</h3>
-            <Link to="/negocios" className="text-link">Ver revisiones →</Link>
+            <h3>🕒 Últimas Visitas Registradas</h3>
+            <Link to="/negocios" className="text-link">Ver todas →</Link>
           </div>
           {!ultimas.length ? (
             <p className="empty">Aún no hay revisiones registradas.</p>
