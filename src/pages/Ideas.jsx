@@ -148,32 +148,51 @@ export default function Ideas() {
 
       {/* Formulario de creación / edición */}
       {ed && (
-        <div className="card">
-          <h3>{ed.id ? `Editar Idea: ${ed.titulo}` : 'Registrar Nueva Idea de Negocio'}</h3>
-          <form className="f" key={ed.id || 'new'} onSubmit={save}>
-            <Field
-              label="Título de la Idea"
-              name="titulo"
-              defaultValue={ed.titulo || ''}
-              placeholder="Ej. Máquina de peluches en Galería Primavera"
-              required
-            />
+        <div className="card ideas-form-wrapper" style={{ border: '2px solid var(--berry)', boxShadow: '0 8px 30px rgba(224, 36, 94, 0.12)', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--line)', paddingBottom: '12px' }}>
+            <h3 style={{ fontSize: '18px', color: 'var(--plum)' }}>
+              {ed.id ? `✏️ Editar Idea: ${ed.titulo}` : '💡 Registrar Nueva Idea de Negocio'}
+            </h3>
+            <button
+              type="button"
+              className="alt"
+              onClick={() => setEd(null)}
+              style={{ padding: '4px 10px', fontSize: '13px' }}
+            >
+              ✕ Cerrar
+            </button>
+          </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
-              <Field
-                label="Inversión Inicial Estimada (S/)"
-                name="inversion_inicial"
-                type="number"
-                step="0.01"
-                min="0"
-                defaultValue={ed.inversion_inicial ?? 500}
-                placeholder="500"
+          <form className="ideas-form-card" key={ed.id || 'new'} onSubmit={save}>
+            <label style={{ width: '100%' }}>
+              <span>Título de la Idea o Proyecto</span>
+              <input
+                name="titulo"
+                defaultValue={ed.titulo || ''}
+                placeholder="Ej. Máquina de peluches en Galería Primavera / Vending de café"
                 required
+                style={{ width: '100%', fontSize: '15px', fontWeight: '600' }}
               />
+            </label>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', width: '100%' }}>
+              <label>
+                <span>Inversión Inicial Estimada (S/)</span>
+                <input
+                  name="inversion_inicial"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={ed.inversion_inicial ?? 500}
+                  placeholder="500"
+                  required
+                  style={{ width: '100%', fontSize: '15px' }}
+                />
+              </label>
 
               <label>
-                Categoría
-                <select name="categoria" defaultValue={ed.categoria || 'Chicleras / Peloteras'}>
+                <span>Categoría</span>
+                <select name="categoria" defaultValue={ed.categoria || 'Chicleras / Peloteras'} style={{ width: '100%' }}>
                   {CATEGORIAS_SUGERIDAS.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
@@ -181,8 +200,8 @@ export default function Ideas() {
               </label>
 
               <label>
-                Estado actual
-                <select name="estado" defaultValue={ed.estado || 'idea'}>
+                <span>Estado actual</span>
+                <select name="estado" defaultValue={ed.estado || 'idea'} style={{ width: '100%' }}>
                   {ESTADOS.map((st) => (
                     <option key={st.id} value={st.id}>{st.label}</option>
                   ))}
@@ -191,26 +210,26 @@ export default function Ideas() {
             </div>
 
             {/* Selector de Puntuación de 1 a 10 interactivo */}
-            <div style={{ margin: '8px 0 12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--plum)' }}>
+            <div style={{ background: '#fdfcfe', padding: '14px 16px', borderRadius: '14px', border: '1.5px solid var(--line)', width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                <span style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--plum)' }}>
                   Puntuación de Viabilidad (1 al 10):
                 </span>
                 <span style={{
-                  fontSize: '15px',
+                  fontSize: '14px',
                   fontWeight: '800',
                   color: getBadgeStyle(puntuacionForm).color,
                   background: getBadgeStyle(puntuacionForm).bg,
-                  padding: '2px 10px',
+                  padding: '4px 14px',
                   borderRadius: '12px',
-                  border: `1px solid ${getBadgeStyle(puntuacionForm).border}`,
+                  border: `1.5px solid ${getBadgeStyle(puntuacionForm).border}`,
                 }}>
                   ⭐ {puntuacionForm} / 10 • {getBadgeStyle(puntuacionForm).label}
                 </span>
               </div>
 
               {/* Botones de número del 1 al 10 */}
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <div className="score-grid">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
                   const isSelected = puntuacionForm === num
                   const style = getBadgeStyle(num)
@@ -220,17 +239,18 @@ export default function Ideas() {
                       key={num}
                       onClick={() => setPuntuacionForm(num)}
                       style={{
-                        flex: '1 0 38px',
-                        height: '38px',
-                        borderRadius: '8px',
-                        border: isSelected ? `2px solid ${style.border}` : '1px solid var(--line)',
+                        height: '42px',
+                        borderRadius: '10px',
+                        border: isSelected ? `2.5px solid ${style.border}` : '1.5px solid var(--line)',
                         background: isSelected ? style.bg : '#fff',
                         color: isSelected ? style.color : 'var(--ink)',
                         fontWeight: isSelected ? '800' : '600',
-                        fontSize: '14px',
+                        fontSize: '15px',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
-                        boxShadow: isSelected ? '0 2px 6px rgba(0,0,0,0.1)' : 'none',
+                        boxShadow: isSelected ? '0 3px 8px rgba(0,0,0,0.12)' : 'none',
+                        transform: isSelected ? 'scale(1.04)' : 'none',
+                        padding: 0,
                       }}
                     >
                       {num}
@@ -240,21 +260,23 @@ export default function Ideas() {
               </div>
             </div>
 
-            <label>
-              Descripción y detalles de la idea
+            <label style={{ width: '100%' }}>
+              <span>Descripción y detalles de la idea</span>
               <textarea
                 name="descripcion"
                 rows="4"
                 defaultValue={ed.descripcion || ''}
-                placeholder="Explica de qué trata, dónde se ubicaría, qué permisos o contactos necesitas, posibles ganancias, etc."
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--line)' }}
+                placeholder="Explica de qué trata la idea, ubicación tentativa, proveedores, costos estimados, margen esperado, contactos, etc."
+                style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1.5px solid var(--line)', resize: 'vertical' }}
               />
             </label>
 
-            <div className="acts">
-              <button>Guardar Idea</button>
-              <button type="button" className="alt" onClick={() => setEd(null)}>
+            <div className="acts" style={{ justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+              <button type="button" className="alt" onClick={() => setEd(null)} style={{ padding: '10px 20px', fontSize: '14px' }}>
                 Cancelar
+              </button>
+              <button type="submit" style={{ padding: '10px 26px', fontSize: '14px', fontWeight: '700' }}>
+                💾 Guardar Idea
               </button>
             </div>
           </form>

@@ -848,3 +848,25 @@ button.del { background: #fff; color: #dc2626; border: 1.5px solid #fecaca; }
 .mroi-actions { display: flex; gap: 8px; margin-top: auto; }
 .mroi-actions > * { flex: 1; text-align: center; }
 @media (max-width: 600px) { .maquinas-roi-grid { grid-template-columns: 1fr; } .roi-global-pct { font-size: 32px; } }
+
+/* ===== Formulario y Vistas de Ideas de Negocio ===== */
+.ideas-form-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  width: 100% !important;
+}
+
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+@media (max-width: 650px) {
+  .score-grid {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 8px !important;
+  }
+}
