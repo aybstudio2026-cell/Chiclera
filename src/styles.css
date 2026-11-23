@@ -857,6 +857,21 @@ button.del { background: #fff; color: #dc2626; border: 1.5px solid #fecaca; }
   width: 100% !important;
 }
 
+.ideas-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  width: 100%;
+}
+
+.ideas-score-box {
+  background: #fdfcfe;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--line);
+  width: 100%;
+}
+
 .score-grid {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
@@ -864,9 +879,161 @@ button.del { background: #fff; color: #dc2626; border: 1.5px solid #fecaca; }
   width: 100%;
 }
 
+.ideas-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.ideas-filters-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+}
+
+.ideas-filters-search {
+  flex: 1 1 240px;
+}
+
+.ideas-filters-selects {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ideas-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.idea-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin: 0 !important;
+  position: relative;
+  border-radius: 16px;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.idea-quick-chips {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.idea-quick-chip {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.idea-quick-chip:hover, .idea-quick-chip:active {
+  background: #e2e8f0;
+}
+
+/* Ajustes específicos para móviles */
 @media (max-width: 650px) {
+  .ideas-form-wrapper {
+    padding: 14px !important;
+    border-radius: 14px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .ideas-fields-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .ideas-score-box {
+    padding: 12px !important;
+  }
+
   .score-grid {
     grid-template-columns: repeat(5, 1fr) !important;
     gap: 8px !important;
+  }
+
+  .score-grid button {
+    height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  .ideas-form-actions {
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .ideas-form-actions button {
+    width: 100% !important;
+    padding: 13px !important;
+    font-size: 15px !important;
+    justify-content: center !important;
+  }
+
+  .ideas-filters-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .ideas-filters-search {
+    width: 100% !important;
+    flex: none !important;
+  }
+
+  .ideas-filters-search input {
+    width: 100% !important;
+    padding: 11px 12px !important;
+    font-size: 15px !important;
+  }
+
+  .ideas-filters-selects {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .ideas-filters-selects select {
+    width: 100% !important;
+    padding: 10px 8px !important;
+    font-size: 12.5px !important;
+  }
+
+  .ideas-cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .idea-card {
+    padding: 15px !important;
+    border-radius: 14px !important;
+  }
+
+  .ideas-header-action {
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+
+  .ideas-header-action button {
+    width: 100% !important;
+    padding: 12px 16px !important;
+    font-size: 15px !important;
+    justify-content: center !important;
   }
 }

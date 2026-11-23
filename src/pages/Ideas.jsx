@@ -115,9 +115,11 @@ export default function Ideas() {
     <Page
       title="Ideas de Negocio y Expansión"
       actions={
-        <button onClick={() => abrirEdicion({})}>
-          💡 Nueva Idea de Negocio
-        </button>
+        <div className="ideas-header-action">
+          <button onClick={() => abrirEdicion({})}>
+            💡 Nueva Idea de Negocio
+          </button>
+        </div>
       }
     >
       <Err e={ideas.error} />
@@ -157,7 +159,7 @@ export default function Ideas() {
               type="button"
               className="alt"
               onClick={() => setEd(null)}
-              style={{ padding: '4px 10px', fontSize: '13px' }}
+              style={{ padding: '6px 12px', fontSize: '13px' }}
             >
               ✕ Cerrar
             </button>
@@ -171,11 +173,11 @@ export default function Ideas() {
                 defaultValue={ed.titulo || ''}
                 placeholder="Ej. Máquina de peluches en Galería Primavera / Vending de café"
                 required
-                style={{ width: '100%', fontSize: '15px', fontWeight: '600' }}
+                style={{ width: '100%', fontSize: '16px', fontWeight: '600' }}
               />
             </label>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', width: '100%' }}>
+            <div className="ideas-fields-grid">
               <label>
                 <span>Inversión Inicial Estimada (S/)</span>
                 <input
@@ -186,13 +188,13 @@ export default function Ideas() {
                   defaultValue={ed.inversion_inicial ?? 500}
                   placeholder="500"
                   required
-                  style={{ width: '100%', fontSize: '15px' }}
+                  style={{ width: '100%', fontSize: '16px' }}
                 />
               </label>
 
               <label>
                 <span>Categoría</span>
-                <select name="categoria" defaultValue={ed.categoria || 'Chicleras / Peloteras'} style={{ width: '100%' }}>
+                <select name="categoria" defaultValue={ed.categoria || 'Chicleras / Peloteras'} style={{ width: '100%', fontSize: '15px' }}>
                   {CATEGORIAS_SUGERIDAS.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
@@ -201,7 +203,7 @@ export default function Ideas() {
 
               <label>
                 <span>Estado actual</span>
-                <select name="estado" defaultValue={ed.estado || 'idea'} style={{ width: '100%' }}>
+                <select name="estado" defaultValue={ed.estado || 'idea'} style={{ width: '100%', fontSize: '15px' }}>
                   {ESTADOS.map((st) => (
                     <option key={st.id} value={st.id}>{st.label}</option>
                   ))}
@@ -210,7 +212,7 @@ export default function Ideas() {
             </div>
 
             {/* Selector de Puntuación de 1 a 10 interactivo */}
-            <div style={{ background: '#fdfcfe', padding: '14px 16px', borderRadius: '14px', border: '1.5px solid var(--line)', width: '100%' }}>
+            <div className="ideas-score-box">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
                 <span style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--plum)' }}>
                   Puntuación de Viabilidad (1 al 10):
@@ -239,13 +241,11 @@ export default function Ideas() {
                       key={num}
                       onClick={() => setPuntuacionForm(num)}
                       style={{
-                        height: '42px',
                         borderRadius: '10px',
                         border: isSelected ? `2.5px solid ${style.border}` : '1.5px solid var(--line)',
                         background: isSelected ? style.bg : '#fff',
                         color: isSelected ? style.color : 'var(--ink)',
                         fontWeight: isSelected ? '800' : '600',
-                        fontSize: '15px',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                         boxShadow: isSelected ? '0 3px 8px rgba(0,0,0,0.12)' : 'none',
@@ -267,15 +267,15 @@ export default function Ideas() {
                 rows="4"
                 defaultValue={ed.descripcion || ''}
                 placeholder="Explica de qué trata la idea, ubicación tentativa, proveedores, costos estimados, margen esperado, contactos, etc."
-                style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1.5px solid var(--line)', resize: 'vertical' }}
+                style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1.5px solid var(--line)', fontSize: '15px', resize: 'vertical' }}
               />
             </label>
 
-            <div className="acts" style={{ justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
-              <button type="button" className="alt" onClick={() => setEd(null)} style={{ padding: '10px 20px', fontSize: '14px' }}>
+            <div className="ideas-form-actions">
+              <button type="button" className="alt" onClick={() => setEd(null)}>
                 Cancelar
               </button>
-              <button type="submit" style={{ padding: '10px 26px', fontSize: '14px', fontWeight: '700' }}>
+              <button type="submit" style={{ fontWeight: '700' }}>
                 💾 Guardar Idea
               </button>
             </div>
@@ -284,9 +284,9 @@ export default function Ideas() {
       )}
 
       {/* Barra de Filtros y Búsqueda */}
-      <div className="card" style={{ padding: '12px 16px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ flex: '1 1 240px' }}>
+      <div className="card ideas-filters-card" style={{ padding: '14px', marginBottom: '16px' }}>
+        <div className="ideas-filters-row">
+          <div className="ideas-filters-search">
             <input
               type="search"
               placeholder="🔍 Buscar por título, categoría o descripción..."
@@ -296,11 +296,10 @@ export default function Ideas() {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div className="ideas-filters-selects">
             <select
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
-              style={{ padding: '8px 12px', fontSize: '13px' }}
             >
               <option value="todos">Todos los estados</option>
               {ESTADOS.map((st) => (
@@ -311,7 +310,6 @@ export default function Ideas() {
             <select
               value={orden}
               onChange={(e) => setOrden(e.target.value)}
-              style={{ padding: '8px 12px', fontSize: '13px' }}
             >
               <option value="puntuacion_desc">⭐ Mayor puntuación (10 a 1)</option>
               <option value="puntuacion_asc">⭐ Menor puntuación</option>
@@ -338,7 +336,7 @@ export default function Ideas() {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+        <div className="ideas-cards-grid">
           {ideasFiltradas.map((item) => {
             const badge = getBadgeStyle(item.puntuacion)
             const estadoObj = ESTADOS.find((s) => s.id === item.estado) || ESTADOS[0]
@@ -346,24 +344,19 @@ export default function Ideas() {
             return (
               <div
                 key={item.id}
-                className="card"
+                className="idea-card"
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  margin: 0,
-                  position: 'relative',
                   borderTop: `4px solid ${badge.border}`,
                 }}
               >
                 <div>
                   {/* Cabecera de la tarjeta */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                    <div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <span className="pill info" style={{ fontSize: '11px', marginBottom: '6px', display: 'inline-block' }}>
                         {item.categoria || 'Negocio'}
                       </span>
-                      <h3 style={{ margin: 0, fontSize: '17px', color: 'var(--plum)', lineHeight: 1.3 }}>
+                      <h3 style={{ margin: 0, fontSize: '17px', color: 'var(--plum)', lineHeight: 1.3, wordBreak: 'break-word' }}>
                         {item.titulo}
                       </h3>
                     </div>
@@ -377,7 +370,7 @@ export default function Ideas() {
                         padding: '4px 10px',
                         borderRadius: '10px',
                         fontWeight: '800',
-                        fontSize: '15px',
+                        fontSize: '14px',
                         textAlign: 'center',
                         flexShrink: 0,
                       }}
@@ -389,7 +382,7 @@ export default function Ideas() {
 
                   {/* Estado y barra de puntuación */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0 12px' }}>
-                    <span className={`pill ${estadoObj.color === 'ok' ? 'ok' : estadoObj.color === 'warn' ? 'warn' : 'info'}`}>
+                    <span className={`pill ${estadoObj.color === 'ok' ? 'ok' : estadoObj.color === 'warn' ? 'warn' : 'info'}`} style={{ fontSize: '11.5px' }}>
                       {estadoObj.label}
                     </span>
                     <div className="bar" style={{ flex: 1, height: '8px' }}>
@@ -424,7 +417,7 @@ export default function Ideas() {
                       {item.descripcion}
                     </p>
                   ) : (
-                    <p className="sub-text" style={{ fontStyle: 'italic', marginBottom: '16px' }}>
+                    <p className="sub-text" style={{ fontStyle: 'italic', marginBottom: '16px', fontSize: '13px' }}>
                       Sin descripción detallada.
                     </p>
                   )}
@@ -433,12 +426,11 @@ export default function Ideas() {
                 {/* Acciones al pie de la tarjeta */}
                 <div style={{ borderTop: '1px solid var(--line)', paddingTop: '12px', marginTop: 'auto' }}>
                   {/* Selector rápido de estado */}
-                  <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                  <div className="idea-quick-chips">
                     {item.estado !== 'aprobada' && (
                       <button
                         type="button"
-                        className="btn alt"
-                        style={{ fontSize: '11px', padding: '4px 8px' }}
+                        className="idea-quick-chip"
                         onClick={() => cambiarEstadoRapido(item, 'aprobada')}
                         title="Marcar como aprobada para ejecución"
                       >
@@ -448,8 +440,7 @@ export default function Ideas() {
                     {item.estado !== 'evaluando' && item.estado !== 'aprobada' && (
                       <button
                         type="button"
-                        className="btn alt"
-                        style={{ fontSize: '11px', padding: '4px 8px' }}
+                        className="idea-quick-chip"
                         onClick={() => cambiarEstadoRapido(item, 'evaluando')}
                         title="Marcar como en evaluación"
                       >
@@ -459,8 +450,8 @@ export default function Ideas() {
                     {item.estado !== 'descartada' && (
                       <button
                         type="button"
-                        className="btn alt"
-                        style={{ fontSize: '11px', padding: '4px 8px', color: '#991b1b' }}
+                        className="idea-quick-chip"
+                        style={{ color: '#991b1b', borderColor: '#fecaca' }}
                         onClick={() => cambiarEstadoRapido(item, 'descartada')}
                         title="Descartar idea"
                       >
@@ -469,15 +460,15 @@ export default function Ideas() {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <small className="sub-text">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                    <small className="sub-text" style={{ fontSize: '11px' }}>
                       {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
                     </small>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <button className="alt" style={{ fontSize: '12px', padding: '4px 10px' }} onClick={() => abrirEdicion(item)}>
+                      <button className="alt" style={{ fontSize: '12px', padding: '5px 12px' }} onClick={() => abrirEdicion(item)}>
                         ✏️ Editar
                       </button>
-                      <button className="del" style={{ fontSize: '12px', padding: '4px 10px' }} onClick={() => removeIdea(item)}>
+                      <button className="del" style={{ fontSize: '12px', padding: '5px 12px' }} onClick={() => removeIdea(item)}>
                         Eliminar
                       </button>
                     </div>
