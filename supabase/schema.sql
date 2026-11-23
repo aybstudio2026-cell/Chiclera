@@ -62,8 +62,20 @@ create table chiclera.mantenimientos (
   created_at timestamptz not null default now()
 );
 
+create table chiclera.ideas_negocio (
+  id uuid primary key default gen_random_uuid(),
+  titulo text not null,
+  descripcion text,
+  inversion_inicial numeric(10,2) not null default 0,
+  puntuacion int not null default 5 check (puntuacion between 1 and 10),
+  estado text not null default 'idea' check (estado in ('idea', 'evaluando', 'aprobada', 'descartada')),
+  categoria text,
+  created_at timestamptz not null default now()
+);
+
 create index on chiclera.revisiones (negocio_id, fecha);
 create index on chiclera.mantenimientos (maquina_id, fecha);
+create index on chiclera.ideas_negocio (puntuacion desc);
 
 -- Permisos para que la API de Supabase pueda usar el schema
 grant usage on schema chiclera to anon, authenticated, service_role;
@@ -78,7 +90,7 @@ alter default privileges in schema chiclera grant all on sequences to anon, auth
 do $$
 declare t text;
 begin
-  foreach t in array array['maquinas','negocios','revisiones','compras','mantenimientos'] loop
+  foreach t in array array['maquinas','negocios','revisiones','compras','mantenimientos','ideas_negocio'] loop
     execute format('alter table chiclera.%I enable row level security', t);
     execute format('create policy "acceso_%1$s" on chiclera.%1$I for all to anon, authenticated using (true) with check (true)', t);
   end loop;
@@ -92,4 +104,22 @@ end $$;
 -- 3) Si ya tenías la base de datos creada anteriormente, corre esto para añadir las columnas de GPS:
 --    alter table chiclera.negocios add column if not exists lat numeric(10,6);
 --    alter table chiclera.negocios add column if not exists lng numeric(10,6);
+--
+-- 4) Si ya tenías la base de datos y solo quieres agregar la tabla de Ideas de Negocio, corre esto:
+--    create table if not exists chiclera.ideas_negocio (
+--      id uuid primary key default gen_random_uuid(),
+--      titulo text not null,
+--      descripcion text,
+--      inversion_inicial numeric(10,2) not null default 0,
+--      puntuacion int not null default 5 check (puntuacion between 1 and 10),
+--      estado text not null default 'idea' check (estado in ('idea', 'evaluando', 'aprobada', 'descartada')),
+--      categoria text,
+--      created_at timestamptz not null default now()
+--    );
+--    create index if not exists idx_ideas_puntuacion on chiclera.ideas_negocio (puntuacion desc);
+--    alter table chiclera.ideas_negocio enable row level security;
+--    drop policy if exists "acceso_ideas_negocio" on chiclera.ideas_negocio;
+--    create policy "acceso_ideas_negocio" on chiclera.ideas_negocio for all to anon, authenticated using (true) with check (true);
+--    grant all on chiclera.ideas_negocio to anon, authenticated, service_role;
+
 

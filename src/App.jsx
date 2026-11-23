@@ -15,6 +15,7 @@ const Mantenimiento = lazy(() => import('./pages/Mantenimiento'))
 const Proyeccion = lazy(() => import('./pages/Proyeccion'))
 const Ruta = lazy(() => import('./pages/Ruta'))
 const Contrato = lazy(() => import('./pages/Contrato'))
+const Ideas = lazy(() => import('./pages/Ideas'))
 
 // Menú móvil rápido
 const navMobile = [
@@ -90,6 +91,7 @@ export default function App() {
             <NavLink to="/maquinas">🎰 Máquinas</NavLink>
             <NavLink to="/mantenimiento">🔧 Mantenimiento</NavLink>
             <NavLink to="/proyeccion">📈 Proyección financiera</NavLink>
+            <NavLink to="/ideas">💡 Ideas de negocio</NavLink>
           </nav>
         </div>
 
@@ -111,6 +113,7 @@ export default function App() {
             <Route path="/liquidaciones" element={<Liquidaciones />} />
             <Route path="/mantenimiento" element={<Mantenimiento />} />
             <Route path="/proyeccion" element={<Proyeccion />} />
+            <Route path="/ideas" element={<Ideas />} />
             <Route path="/ruta" element={<Ruta />} />
             <Route path="/contrato" element={<Contrato />} />
           </Routes>
@@ -181,6 +184,9 @@ export default function App() {
               </NavLink>
               <NavLink to="/proyeccion" onClick={() => setMenuAbierto(false)}>
                 📈 Proyección de Crecimiento
+              </NavLink>
+              <NavLink to="/ideas" onClick={() => setMenuAbierto(false)}>
+                💡 Ideas de Negocio
               </NavLink>
             </div>
           </div>
