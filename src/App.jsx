@@ -3,6 +3,7 @@ import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { usingSupabase } from './lib/db'
 import { useTable } from './hooks/useTable'
 import { hoy } from './lib/calc'
+import logoChiclera from './assets/chiclera.svg'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Maquinas = lazy(() => import('./pages/Maquinas'))
@@ -53,7 +54,7 @@ export default function App() {
       {/* Barra superior solo visible en celulares */}
       <header className="mobile-top-bar">
         <div className="mobile-brand">
-          <span className="mobile-logo">🍬</span>
+          <img src={logoChiclera} alt="ChicleControl" className="app-logo-icon" />
           <b>ChicleControl</b>
         </div>
         <div className="mobile-status">
@@ -65,7 +66,10 @@ export default function App() {
 
       {/* Menú lateral estructurado por secciones para escritorio */}
       <aside className="desktop-sidebar">
-        <h2>ChicleControl</h2>
+        <div className="desktop-brand">
+          <img src={logoChiclera} alt="ChicleControl" className="app-logo-icon desktop" />
+          <h2>ChicleControl</h2>
+        </div>
 
         <div className="nav-group">
           <div className="nav-section-title">VENTAS Y RUTA</div>
