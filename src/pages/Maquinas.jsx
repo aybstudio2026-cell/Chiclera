@@ -3,10 +3,14 @@ import { Link } from 'react-router-dom'
 import { useTable } from '../hooks/useTable'
 import { Err, Field, Page, formData } from '../components'
 import { COSTO_MAQUINA, hoy, money, sum } from '../lib/calc'
+import { exportToExcel } from '../lib/exportExcel'
+import EtiquetasModal from '../components/EtiquetasModal'
 
 export default function Maquinas() {
   const m = useTable('maquinas'), n = useTable('negocios'), r = useTable('revisiones')
   const [ed, setEd] = useState(null)
+  const [mostrarEtiquetas, setMostrarEtiquetas] = useState(false)
+  const [maquinaEtiqueta, setMaquinaEtiqueta] = useState(null)
 
   const negociosPorMaquina = useMemo(
     () => new Map(n.rows.map((neg) => [neg.maquina_id, neg])),
@@ -42,13 +46,63 @@ export default function Maquinas() {
     if (await (ed.id ? m.update(ed.id, d) : m.insert(d))) setEd(null)
   }
 
+  // Exportar flota a Excel
+  const exportarMaquinasExcel = () => {
+    const headers = [
+      { key: 'codigo', label: 'Código' },
+      { key: 'estado', label: 'Estado' },
+      { key: 'local', label: 'Negocio Asignado', transform: (_, r) => negociosPorMaquina.get(r.id)?.negocio || 'Sin asignar' },
+      { key: 'costo', label: 'Costo Inversión (S/)', transform: (v) => Number(v || COSTO_MAQUINA).toFixed(2) },
+      { key: 'recaudo', label: 'Total Recaudado (S/)', transform: (_, r) => {
+        const neg = negociosPorMaquina.get(r.id)
+        const rv = neg ? (revisionesPorNegocio.get(neg.id) || []) : []
+        return sum(rv, 'recaudo').toFixed(2)
+      }},
+      { key: 'ganancia_neta', label: 'Mi Ganancia Neta (S/)', transform: (_, r) => {
+        const neg = negociosPorMaquina.get(r.id)
+        const rv = neg ? (revisionesPorNegocio.get(neg.id) || []) : []
+        return sum(rv, 'ganancia_neta').toFixed(2)
+      }},
+      { key: 'fecha_compra', label: 'Fecha de Compra' },
+      { key: 'notas', label: 'Notas' },
+    ]
+    exportToExcel({
+      filename: 'maquinas_chiclecontrol',
+      headers,
+      rows: m.rows,
+    })
+  }
+
   return (
     <Page
       title="Máquinas"
       actions={
-        <Link to="/compras" className="btn alt" title="Las máquinas se crean automáticamente al registrar su compra">
-          🛒 Adquirir máquina en Compras
-        </Link>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn"
+            style={{ background: '#059669', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            onClick={() => {
+              setMaquinaEtiqueta(null)
+              setMostrarEtiquetas(true)
+            }}
+            title="Generar e imprimir etiquetas adhesivas con código QR"
+          >
+            🏷️ Etiquetas QR
+          </button>
+          <button
+            type="button"
+            className="btn alt"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            onClick={exportarMaquinasExcel}
+            title="Descargar lista de máquinas en Excel"
+          >
+            📥 Exportar a Excel
+          </button>
+          <Link to="/compras" className="btn alt" title="Las máquinas se crean automáticamente al registrar su compra">
+            🛒 Adquirir en Compras
+          </Link>
+        </div>
       }
     >
       <Err e={m.error} />
@@ -218,6 +272,18 @@ export default function Maquinas() {
                     )}
 
                     <div className="mroi-actions">
+                      <button
+                        type="button"
+                        className="btn"
+                        style={{ fontSize: '12px', background: '#059669', color: '#fff', padding: '5px 9px' }}
+                        onClick={() => {
+                          setMaquinaEtiqueta(x)
+                          setMostrarEtiquetas(true)
+                        }}
+                        title="Ver e imprimir etiqueta con QR para esta máquina"
+                      >
+                        🏷️ Etiqueta QR
+                      </button>
                       <button className="btn alt" style={{ fontSize: '12px' }} onClick={() => setEd(x)}>✏️ Editar</button>
                       <button className="btn del" style={{ fontSize: '12px' }} onClick={() => confirm(`¿Eliminar ${x.codigo}?`) && m.remove(x.id)}>Eliminar</button>
                     </div>
@@ -228,6 +294,19 @@ export default function Maquinas() {
           </>
         )}
       </div>
+
+      {/* Modal de etiquetas QR para imprimir */}
+      {mostrarEtiquetas && (
+        <EtiquetasModal
+          maquinas={m.rows}
+          negocios={n.rows}
+          maquinaInicial={maquinaEtiqueta}
+          onClose={() => {
+            setMostrarEtiquetas(false)
+            setMaquinaEtiqueta(null)
+          }}
+        />
+      )}
     </Page>
   )
 }

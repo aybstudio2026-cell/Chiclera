@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useTable } from '../hooks/useTable'
-import { Err, Field, Page, Stat, formData } from '../components'
+import { Err, Field, Page, formData } from '../components'
 import { hoy, money, sum } from '../lib/calc'
+import { exportToExcel } from '../lib/exportExcel'
 
 const CATEGORIAS_SUGERIDAS = [
   'Chicleras / Peloteras',
@@ -9,14 +10,14 @@ const CATEGORIAS_SUGERIDAS = [
   'Vending de Snacks / Bebidas',
   'Vending de Café',
   'Juegos mecánicos infantiles',
-  'Nuevo punto de venta',
+  'Nuevo local comercial',
   'Otro',
 ]
 
 const ESTADOS = [
   { id: 'idea', label: '💡 Idea inicial', color: 'info' },
   { id: 'evaluando', label: '🔍 Evaluando', color: 'warn' },
-  { id: 'aprobada', label: '🚀 Aprobada / En marcha', color: 'ok' },
+  { id: 'aprobada', label: '🚀 Aprobada', color: 'ok' },
   { id: 'descartada', label: '❌ Descartada', color: 'muted' },
 ]
 
@@ -105,75 +106,95 @@ export default function Ideas() {
   // Estilo visual del badge de puntuación
   const getBadgeStyle = (score) => {
     const s = Number(score)
-    if (s >= 9) return { color: '#047857', bg: '#d1fae5', border: '#10b981', label: '🔥 Excelente' }
-    if (s >= 7) return { color: '#0f766e', bg: '#ccfbf1', border: '#14b8a6', label: '✨ Muy buena' }
-    if (s >= 5) return { color: '#b45309', bg: '#fef3c7', border: '#f59e0b', label: '⚖️ Promedio' }
-    return { color: '#b91c1c', bg: '#fee2e2', border: '#ef4444', label: '⚠️ Riesgosa' }
+    if (s >= 9) return { color: '#047857', bg: '#d1fae5', border: '#10b981', label: 'Excelente' }
+    if (s >= 7) return { color: '#0f766e', bg: '#ccfbf1', border: '#14b8a6', label: 'Muy buena' }
+    if (s >= 5) return { color: '#b45309', bg: '#fef3c7', border: '#f59e0b', label: 'Promedio' }
+    return { color: '#b91c1c', bg: '#fee2e2', border: '#ef4444', label: 'Riesgosa' }
+  }
+
+  // Exportar a Excel
+  const exportarIdeasExcel = () => {
+    const headers = [
+      { key: 'titulo', label: 'Título de la Idea' },
+      { key: 'categoria', label: 'Categoría' },
+      { key: 'estado', label: 'Estado' },
+      { key: 'puntuacion', label: 'Puntuación (1 al 10)' },
+      { key: 'inversion_inicial', label: 'Inversión Estimada (S/)', transform: (v) => Number(v || 0).toFixed(2) },
+      { key: 'descripcion', label: 'Detalles / Descripción' },
+      { key: 'created_at', label: 'Fecha Registro', transform: (v) => (v ? v.slice(0, 10) : '') },
+    ]
+    exportToExcel({
+      filename: 'ideas_negocio_chiclecontrol',
+      headers,
+      rows: ideasFiltradas,
+    })
   }
 
   return (
     <Page
-      title="Ideas de Negocio y Expansión"
+      title="Ideas de Negocio"
       actions={
-        <div className="ideas-header-action">
-          <button onClick={() => abrirEdicion({})}>
-            💡 Nueva Idea de Negocio
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn alt"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            onClick={exportarIdeasExcel}
+            title="Exportar ideas a Excel"
+          >
+            📥 Exportar a Excel
+          </button>
+          <button className="ideas-add-btn" onClick={() => abrirEdicion({})}>
+            ➕ Nueva Idea
           </button>
         </div>
       }
     >
       <Err e={ideas.error} />
 
-      {/* KPI Cards de resumen */}
-      <div className="grid">
-        <Stat
-          label="Total de Ideas"
-          value={stats.total}
-          sub={`${stats.ideasTop} ideas con puntaje top`}
-        />
-        <div className="stat hot">
-          <span>Inversión Total Estimada</span>
-          <b>{money(stats.inversionTotal)}</b>
-          <small>en todas las ideas registradas</small>
+      {/* Barra de resumen compacta sin bloques gigantes */}
+      <div className="ideas-summary-bar">
+        <div className="ideas-summary-chip">
+          <span>💡 Total:</span>
+          <b>{stats.total} ideas</b>
         </div>
-        <Stat
-          label="⭐ Puntuación Promedio"
-          value={`${stats.promedio} / 10`}
-          sub="viabilidad general"
-        />
-        <Stat
-          label="🚀 Ideas Top (8+ pts)"
-          value={stats.ideasTop}
-          sub="listas para evaluar / ejecutar"
-        />
+        <div className="ideas-summary-chip">
+          <span>💰 Inversión est.:</span>
+          <b style={{ color: 'var(--berry)' }}>{money(stats.inversionTotal)}</b>
+        </div>
+        <div className="ideas-summary-chip">
+          <span>⭐ Viabilidad prom.:</span>
+          <b>{stats.promedio} / 10</b>
+        </div>
+        <div className="ideas-summary-chip">
+          <span>🚀 Top (8+ pts):</span>
+          <b style={{ color: '#059669' }}>{stats.ideasTop}</b>
+        </div>
       </div>
 
       {/* Formulario de creación / edición */}
       {ed && (
-        <div className="card ideas-form-wrapper" style={{ border: '2px solid var(--berry)', boxShadow: '0 8px 30px rgba(224, 36, 94, 0.12)', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--line)', paddingBottom: '12px' }}>
-            <h3 style={{ fontSize: '18px', color: 'var(--plum)' }}>
-              {ed.id ? `✏️ Editar Idea: ${ed.titulo}` : '💡 Registrar Nueva Idea de Negocio'}
-            </h3>
+        <div className="card ideas-form-wrapper">
+          <div className="ideas-form-header">
+            <h3>{ed.id ? '✏️ Editar Idea' : '💡 Nueva Idea de Negocio'}</h3>
             <button
               type="button"
-              className="alt"
+              className="ideas-close-btn"
               onClick={() => setEd(null)}
-              style={{ padding: '6px 12px', fontSize: '13px' }}
+              aria-label="Cerrar"
             >
-              ✕ Cerrar
+              ✕
             </button>
           </div>
 
           <form className="ideas-form-card" key={ed.id || 'new'} onSubmit={save}>
-            <label style={{ width: '100%' }}>
-              <span>Título de la Idea o Proyecto</span>
+            <label className="ideas-field-full">
+              <span>Título de la Idea</span>
               <input
                 name="titulo"
                 defaultValue={ed.titulo || ''}
-                placeholder="Ej. Máquina de peluches en Galería Primavera / Vending de café"
+                placeholder="Ej. Máquina de peluches en Galería Primavera"
                 required
-                style={{ width: '100%', fontSize: '16px', fontWeight: '600' }}
               />
             </label>
 
@@ -188,13 +209,12 @@ export default function Ideas() {
                   defaultValue={ed.inversion_inicial ?? 500}
                   placeholder="500"
                   required
-                  style={{ width: '100%', fontSize: '16px' }}
                 />
               </label>
 
               <label>
                 <span>Categoría</span>
-                <select name="categoria" defaultValue={ed.categoria || 'Chicleras / Peloteras'} style={{ width: '100%', fontSize: '15px' }}>
+                <select name="categoria" defaultValue={ed.categoria || 'Chicleras / Peloteras'}>
                   {CATEGORIAS_SUGERIDAS.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
@@ -203,7 +223,7 @@ export default function Ideas() {
 
               <label>
                 <span>Estado actual</span>
-                <select name="estado" defaultValue={ed.estado || 'idea'} style={{ width: '100%', fontSize: '15px' }}>
+                <select name="estado" defaultValue={ed.estado || 'idea'}>
                   {ESTADOS.map((st) => (
                     <option key={st.id} value={st.id}>{st.label}</option>
                   ))}
@@ -213,24 +233,21 @@ export default function Ideas() {
 
             {/* Selector de Puntuación de 1 a 10 interactivo */}
             <div className="ideas-score-box">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
-                <span style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--plum)' }}>
-                  Puntuación de Viabilidad (1 al 10):
-                </span>
-                <span style={{
-                  fontSize: '14px',
-                  fontWeight: '800',
-                  color: getBadgeStyle(puntuacionForm).color,
-                  background: getBadgeStyle(puntuacionForm).bg,
-                  padding: '4px 14px',
-                  borderRadius: '12px',
-                  border: `1.5px solid ${getBadgeStyle(puntuacionForm).border}`,
-                }}>
+              <div className="ideas-score-header">
+                <span className="ideas-score-label">Viabilidad (1 al 10):</span>
+                <span
+                  className="ideas-score-badge"
+                  style={{
+                    color: getBadgeStyle(puntuacionForm).color,
+                    background: getBadgeStyle(puntuacionForm).bg,
+                    borderColor: getBadgeStyle(puntuacionForm).border,
+                  }}
+                >
                   ⭐ {puntuacionForm} / 10 • {getBadgeStyle(puntuacionForm).label}
                 </span>
               </div>
 
-              {/* Botones de número del 1 al 10 */}
+              {/* Botones numéricos 1 al 10 */}
               <div className="score-grid">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
                   const isSelected = puntuacionForm === num
@@ -240,17 +257,11 @@ export default function Ideas() {
                       type="button"
                       key={num}
                       onClick={() => setPuntuacionForm(num)}
+                      className={`score-btn ${isSelected ? 'selected' : ''}`}
                       style={{
-                        borderRadius: '10px',
-                        border: isSelected ? `2.5px solid ${style.border}` : '1.5px solid var(--line)',
+                        borderColor: isSelected ? style.border : 'var(--line)',
                         background: isSelected ? style.bg : '#fff',
                         color: isSelected ? style.color : 'var(--ink)',
-                        fontWeight: isSelected ? '800' : '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        boxShadow: isSelected ? '0 3px 8px rgba(0,0,0,0.12)' : 'none',
-                        transform: isSelected ? 'scale(1.04)' : 'none',
-                        padding: 0,
                       }}
                     >
                       {num}
@@ -260,23 +271,22 @@ export default function Ideas() {
               </div>
             </div>
 
-            <label style={{ width: '100%' }}>
-              <span>Descripción y detalles de la idea</span>
+            <label className="ideas-field-full">
+              <span>Descripción y detalles</span>
               <textarea
                 name="descripcion"
-                rows="4"
+                rows="3"
                 defaultValue={ed.descripcion || ''}
-                placeholder="Explica de qué trata la idea, ubicación tentativa, proveedores, costos estimados, margen esperado, contactos, etc."
-                style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1.5px solid var(--line)', fontSize: '15px', resize: 'vertical' }}
+                placeholder="Ubicación tentativa, proveedores, costos, contactos o notas..."
               />
             </label>
 
             <div className="ideas-form-actions">
-              <button type="button" className="alt" onClick={() => setEd(null)}>
-                Cancelar
-              </button>
-              <button type="submit" style={{ fontWeight: '700' }}>
+              <button type="submit" className="ideas-btn-submit">
                 💾 Guardar Idea
+              </button>
+              <button type="button" className="alt ideas-btn-cancel" onClick={() => setEd(null)}>
+                Cancelar
               </button>
             </div>
           </form>
@@ -284,15 +294,14 @@ export default function Ideas() {
       )}
 
       {/* Barra de Filtros y Búsqueda */}
-      <div className="card ideas-filters-card" style={{ padding: '14px', marginBottom: '16px' }}>
+      <div className="card ideas-filters-card">
         <div className="ideas-filters-row">
           <div className="ideas-filters-search">
             <input
               type="search"
-              placeholder="🔍 Buscar por título, categoría o descripción..."
+              placeholder="🔍 Buscar idea, categoría o detalle..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              style={{ width: '100%' }}
             />
           </div>
 
@@ -311,8 +320,8 @@ export default function Ideas() {
               value={orden}
               onChange={(e) => setOrden(e.target.value)}
             >
-              <option value="puntuacion_desc">⭐ Mayor puntuación (10 a 1)</option>
-              <option value="puntuacion_asc">⭐ Menor puntuación</option>
+              <option value="puntuacion_desc">⭐ Mayor puntaje (10 a 1)</option>
+              <option value="puntuacion_asc">⭐ Menor puntaje</option>
               <option value="inversion_asc">💰 Menor inversión</option>
               <option value="inversion_desc">💰 Mayor inversión</option>
               <option value="recientes">🕒 Más recientes</option>
@@ -325,13 +334,13 @@ export default function Ideas() {
       {!ideasFiltradas.length ? (
         <div className="card">
           <div style={{ textAlign: 'center', padding: '36px 16px' }}>
-            <span style={{ fontSize: '48px', display: 'block', marginBottom: '8px' }}>💡</span>
-            <h3>No hay ideas de negocio registradas todavía</h3>
-            <p className="sub-text" style={{ maxWidth: '480px', margin: '0 auto 16px' }}>
-              Apunta aquí tus planes de expansión (nuevas máquinas, productos, locales tentativos) para no perder ninguna oportunidad.
+            <span style={{ fontSize: '42px', display: 'block', marginBottom: '8px' }}>💡</span>
+            <h3 style={{ fontSize: '18px', color: 'var(--plum)' }}>No hay ideas registradas todavía</h3>
+            <p className="sub-text" style={{ maxWidth: '420px', margin: '6px auto 16px', fontSize: '13.5px' }}>
+              Apunta aquí tus ideas de expansión (máquinas de peluches, nuevos locales, etc.) para evaluarlas con su puntaje de viabilidad.
             </p>
             <button onClick={() => abrirEdicion({})}>
-              ➕ Registrar mi primera idea
+              ➕ Registrar primera idea
             </button>
           </div>
         </div>
@@ -351,12 +360,12 @@ export default function Ideas() {
               >
                 <div>
                   {/* Cabecera de la tarjeta */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '6px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <span className="pill info" style={{ fontSize: '11px', marginBottom: '6px', display: 'inline-block' }}>
+                      <span className="pill info" style={{ fontSize: '11px', marginBottom: '4px', display: 'inline-block' }}>
                         {item.categoria || 'Negocio'}
                       </span>
-                      <h3 style={{ margin: 0, fontSize: '17px', color: 'var(--plum)', lineHeight: 1.3, wordBreak: 'break-word' }}>
+                      <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--plum)', lineHeight: 1.3, wordBreak: 'break-word' }}>
                         {item.titulo}
                       </h3>
                     </div>
@@ -367,64 +376,49 @@ export default function Ideas() {
                         background: badge.bg,
                         color: badge.color,
                         border: `1.5px solid ${badge.border}`,
-                        padding: '4px 10px',
-                        borderRadius: '10px',
+                        padding: '4px 8px',
+                        borderRadius: '8px',
                         fontWeight: '800',
-                        fontSize: '14px',
+                        fontSize: '13.5px',
                         textAlign: 'center',
                         flexShrink: 0,
                       }}
-                      title={`Puntuación de viabilidad: ${item.puntuacion}/10`}
+                      title={`Viabilidad: ${item.puntuacion}/10`}
                     >
                       ⭐ {item.puntuacion}/10
                     </div>
                   </div>
 
                   {/* Estado y barra de puntuación */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0 12px' }}>
-                    <span className={`pill ${estadoObj.color === 'ok' ? 'ok' : estadoObj.color === 'warn' ? 'warn' : 'info'}`} style={{ fontSize: '11.5px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0 10px' }}>
+                    <span className={`pill ${estadoObj.color === 'ok' ? 'ok' : estadoObj.color === 'warn' ? 'warn' : 'info'}`} style={{ fontSize: '11px' }}>
                       {estadoObj.label}
                     </span>
-                    <div className="bar" style={{ flex: 1, height: '8px' }}>
+                    <div className="bar" style={{ flex: 1, height: '7px' }}>
                       <i style={{ width: `${(Number(item.puntuacion || 0) / 10) * 100}%`, background: badge.border }} />
                     </div>
                   </div>
 
                   {/* Tarjeta de Inversión Inicial */}
-                  <div style={{
-                    background: '#f8fafc',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    border: '1px solid var(--line)',
-                    marginBottom: '12px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}>
+                  <div className="idea-investment-box">
                     <span style={{ fontSize: '12px', color: 'var(--mute)' }}>Inversión requerida:</span>
-                    <b style={{ fontSize: '16px', color: 'var(--ink)' }}>{money(item.inversion_inicial)}</b>
+                    <b style={{ fontSize: '15px', color: 'var(--ink)' }}>{money(item.inversion_inicial)}</b>
                   </div>
 
                   {/* Descripción */}
                   {item.descripcion ? (
-                    <p style={{
-                      fontSize: '13.5px',
-                      color: 'var(--ink)',
-                      lineHeight: 1.5,
-                      whiteSpace: 'pre-line',
-                      marginBottom: '16px',
-                    }}>
+                    <p className="idea-desc-text">
                       {item.descripcion}
                     </p>
                   ) : (
-                    <p className="sub-text" style={{ fontStyle: 'italic', marginBottom: '16px', fontSize: '13px' }}>
+                    <p className="sub-text" style={{ fontStyle: 'italic', marginBottom: '12px', fontSize: '12.5px' }}>
                       Sin descripción detallada.
                     </p>
                   )}
                 </div>
 
                 {/* Acciones al pie de la tarjeta */}
-                <div style={{ borderTop: '1px solid var(--line)', paddingTop: '12px', marginTop: 'auto' }}>
+                <div style={{ borderTop: '1px solid var(--line)', paddingTop: '10px', marginTop: 'auto' }}>
                   {/* Selector rápido de estado */}
                   <div className="idea-quick-chips">
                     {item.estado !== 'aprobada' && (
@@ -450,8 +444,7 @@ export default function Ideas() {
                     {item.estado !== 'descartada' && (
                       <button
                         type="button"
-                        className="idea-quick-chip"
-                        style={{ color: '#991b1b', borderColor: '#fecaca' }}
+                        className="idea-quick-chip chip-discard"
                         onClick={() => cambiarEstadoRapido(item, 'descartada')}
                         title="Descartar idea"
                       >
@@ -465,10 +458,10 @@ export default function Ideas() {
                       {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
                     </small>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <button className="alt" style={{ fontSize: '12px', padding: '5px 12px' }} onClick={() => abrirEdicion(item)}>
+                      <button className="alt" style={{ fontSize: '12px', padding: '5px 10px' }} onClick={() => abrirEdicion(item)}>
                         ✏️ Editar
                       </button>
-                      <button className="del" style={{ fontSize: '12px', padding: '5px 12px' }} onClick={() => removeIdea(item)}>
+                      <button className="del" style={{ fontSize: '12px', padding: '5px 10px' }} onClick={() => removeIdea(item)}>
                         Eliminar
                       </button>
                     </div>

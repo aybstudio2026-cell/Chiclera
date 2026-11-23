@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTable } from '../hooks/useTable'
 import { Err, Page, Stat } from '../components'
 import { money, sum } from '../lib/calc'
+import { exportToExcel } from '../lib/exportExcel'
 
 export default function Liquidaciones() {
   const n = useTable('negocios'), r = useTable('revisiones'), m = useTable('maquinas')
@@ -22,13 +23,15 @@ export default function Liquidaciones() {
     return lista
   }, [r.rows, selectedNegocio])
 
-  // Copiar mensaje para WhatsApp
-  const copiarParaWhatsApp = (rev) => {
+  // Formato de texto para WhatsApp
+  const generarTextoWhatsApp = (rev) => {
     const neg = negociosMap.get(rev.negocio_id)
-    const texto = `🍬 *LIQUIDACIÓN DE MÁQUINA CHICLERA* 🍬
+    const maq = maquinasMap.get(neg?.maquina_id)
+    return `🍬 *LIQUIDACIÓN DE MÁQUINA CHICLERA* 🍬
 📅 *Fecha:* ${rev.fecha}
 🏪 *Local:* ${neg?.negocio || 'Negocio'}
 👤 *Titular:* ${neg?.dueno || 'Dueño'}
+🎰 *Máquina:* ${maq?.codigo || 'CH001'}
 
 -----------------------------
 💰 *Recaudación de la máquina:* ${money(rev.recaudo)}
@@ -38,11 +41,67 @@ export default function Liquidaciones() {
 
 👉 *MONTO PAGADO A TU FAVOR:* *${money(rev.parte_dueno)}*
 -----------------------------
-¡Muchas gracias por la colaboración y cuidar la máquina! 🙌`
+¡Muchas gracias por la colaboración y por cuidar la máquina! 🙌`
+  }
 
+  const limpiarTelefono = (tel) => {
+    if (!tel) return ''
+    const soloNum = String(tel).replace(/[^0-9]/g, '')
+    if (soloNum.length === 9 && soloNum.startsWith('9')) {
+      return '51' + soloNum
+    }
+    return soloNum
+  }
+
+  // Enviar mensaje directamente por WhatsApp
+  const enviarPorWhatsApp = (rev) => {
+    const neg = negociosMap.get(rev.negocio_id)
+    const texto = generarTextoWhatsApp(rev)
+    let tel = limpiarTelefono(neg?.telefono)
+    if (!tel) {
+      const ingresado = prompt(
+        `El negocio "${neg?.negocio || ''}" no tiene teléfono registrado.\nIngresa el número de WhatsApp (ej. 987654321):`,
+        ''
+      )
+      if (!ingresado) {
+        navigator.clipboard.writeText(texto)
+        alert('Mensaje copiado al portapapeles para pegarlo directamente en WhatsApp.')
+        return
+      }
+      tel = limpiarTelefono(ingresado)
+    }
+    const url = `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`
+    window.open(url, '_blank')
+  }
+
+  // Copiar mensaje para WhatsApp
+  const copiarParaWhatsApp = (rev) => {
+    const texto = generarTextoWhatsApp(rev)
     navigator.clipboard.writeText(texto)
     setCopiado(true)
     setTimeout(() => setCopiado(false), 2500)
+  }
+
+  // Exportar a Excel
+  const exportarLiquidacionesExcel = () => {
+    const headers = [
+      { key: 'fecha', label: 'Fecha' },
+      { key: 'negocio', label: 'Negocio', transform: (_, row) => negociosMap.get(row.negocio_id)?.negocio || '—' },
+      { key: 'dueno', label: 'Dueño / Titular', transform: (_, row) => negociosMap.get(row.negocio_id)?.dueno || '—' },
+      { key: 'telefono', label: 'Teléfono', transform: (_, row) => negociosMap.get(row.negocio_id)?.telefono || '—' },
+      { key: 'maquina', label: 'Máquina', transform: (_, row) => maquinasMap.get(negociosMap.get(row.negocio_id)?.maquina_id)?.codigo || '—' },
+      { key: 'recaudo', label: 'Recaudado (S/)', transform: (v) => Number(v || 0).toFixed(2) },
+      { key: 'inversion_chicles', label: 'Insumos Repuestos (S/)', transform: (v) => Number(v || 0).toFixed(2) },
+      { key: 'ganancia', label: 'Ganancia Base (S/)', transform: (v) => Number(v || 0).toFixed(2) },
+      { key: 'porcentaje_dueno', label: '% Dueño', transform: (v) => `${v}%` },
+      { key: 'parte_dueno', label: 'Pago a Dueño (S/)', transform: (v) => Number(v || 0).toFixed(2) },
+      { key: 'ganancia_neta', label: 'Mi Ganancia Neta (S/)', transform: (v) => Number(v || 0).toFixed(2) },
+    ]
+    exportToExcel({
+      filename: selectedNegocio ? `liquidaciones_${negociosMap.get(selectedNegocio)?.negocio || 'local'}` : 'liquidaciones_chiclecontrol',
+      headers,
+      rows: revisionesFiltradas,
+    })
   }
 
   const totalPagado = sum(r.rows, 'parte_dueno')
@@ -50,7 +109,20 @@ export default function Liquidaciones() {
   const totalRevisiones = r.rows.length
 
   return (
-    <Page title="Liquidaciones y Pagos a Dueños">
+    <Page
+      title="Liquidaciones y Pagos a Dueños"
+      actions={
+        <button
+          type="button"
+          className="btn alt"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          onClick={exportarLiquidacionesExcel}
+          title="Descargar historial de liquidaciones en archivo Excel"
+        >
+          📥 Exportar a Excel
+        </button>
+      }
+    >
       <Err e={n.error || r.error} />
 
       {/* Métricas clave de pagos */}
@@ -134,14 +206,21 @@ export default function Liquidaciones() {
               )
             })()}
 
-            <div className="recibo-actions noprint">
+            <div className="recibo-actions noprint" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 className="btn"
-                style={{ background: '#25D366' }}
+                style={{ background: '#25D366', color: '#fff', fontWeight: '700' }}
+                onClick={() => enviarPorWhatsApp(reciboActivo)}
+              >
+                📲 Enviar directo por WhatsApp
+              </button>
+              <button
+                type="button"
+                className="btn alt"
                 onClick={() => copiarParaWhatsApp(reciboActivo)}
               >
-                {copiado ? '✅ ¡Copiado al portapapeles!' : '📲 Copiar detalle para WhatsApp'}
+                {copiado ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar texto'}
               </button>
               <button type="button" className="btn alt" onClick={() => window.print()}>
                 🖨️ Imprimir ticket
@@ -189,7 +268,7 @@ export default function Liquidaciones() {
                 <th className="n">% Dueño</th>
                 <th className="n">Comisión Pagada</th>
                 <th className="n">Mi Ganancia</th>
-                <th>Comprobante</th>
+                <th style={{ textAlign: 'center' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -209,17 +288,36 @@ export default function Liquidaciones() {
                       <b>{money(x.ganancia_neta)}</b>
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className="btn alt"
-                        style={{ padding: '4px 10px', fontSize: '12px' }}
-                        onClick={() => {
-                          setReciboActivo(x)
-                          window.scrollTo({ top: 0, behavior: 'smooth' })
-                        }}
-                      >
-                        🧾 Ver recibo
-                      </button>
+                      <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                        <button
+                          type="button"
+                          className="btn"
+                          style={{
+                            background: '#25D366',
+                            color: '#fff',
+                            padding: '4px 8px',
+                            fontSize: '11.5px',
+                            fontWeight: '600',
+                            border: 'none',
+                          }}
+                          onClick={() => enviarPorWhatsApp(x)}
+                          title="Enviar liquidación directamente por WhatsApp al dueño"
+                        >
+                          📲 WhatsApp
+                        </button>
+                        <button
+                          type="button"
+                          className="btn alt"
+                          style={{ padding: '4px 8px', fontSize: '11.5px' }}
+                          onClick={() => {
+                            setReciboActivo(x)
+                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                          }}
+                          title="Ver detalle del ticket de liquidación"
+                        >
+                          🧾 Recibo
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
