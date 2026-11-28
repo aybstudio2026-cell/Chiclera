@@ -147,9 +147,9 @@ export default function Dashboard() {
         />
 
         <Stat
-          label="🛒 Total Invertido (Compras)"
+          label="💸 Total Gastos e Inversión"
           value={money(stats.totalComprado)}
-          sub={`${m.rows.length} máquinas adquiridas`}
+          sub={`${c.rows.length} compras y gastos registrados`}
         />
       </div>
 

@@ -11,10 +11,14 @@ export default function Inventario() {
   const [umbralMinimo, setUmbralMinimo] = useState(2) // 2 bolsas mínimo de seguridad
 
   const data = useMemo(() => {
-    // 1. Total chicles ingresados por compras
+    // 1. Total chicles ingresados por compras (considera unidades exactas ej. 515 o bolsas estándar)
     const comprasChicles = c.rows.filter((x) => x.tipo === 'chicles')
-    const bolsasCompradas = sum(comprasChicles, 'cantidad')
-    const chiclesComprados = bolsasCompradas * CHICLES_BOLSA
+    const chiclesComprados = comprasChicles.reduce((acc, x) => {
+      if (x.unidades != null && Number(x.unidades) > 0) return acc + Number(x.unidades)
+      const cant = Number(x.cantidad) || 0
+      return acc + (cant > 50 ? cant : cant * CHICLES_BOLSA)
+    }, 0)
+    const bolsasCompradas = Number((chiclesComprados / CHICLES_BOLSA).toFixed(1))
     const totalInvertidoChicles = sum(comprasChicles, 'costo_total')
 
     // 2. Total chicles salidos a máquinas (por revisiones)
@@ -196,9 +200,16 @@ export default function Inventario() {
                 .map((x) => (
                   <tr key={x.id}>
                     <td>{x.fecha}</td>
-                    <td><b>Bolsas de chicles ({CHICLES_BOLSA} u.)</b></td>
-                    <td className="n"><b>{x.cantidad} bolsas</b></td>
-                    <td className="n">{(x.cantidad * CHICLES_BOLSA).toLocaleString()} u.</td>
+                    <td><b>Lote de chicles</b></td>
+                    <td className="n"><b>{x.cantidad} {x.cantidad === 1 ? 'bolsa' : 'bolsas'}</b></td>
+                    <td className="n">
+                      <b>
+                        {((x.unidades != null && Number(x.unidades) > 0)
+                          ? Number(x.unidades)
+                          : (Number(x.cantidad) > 50 ? Number(x.cantidad) : Number(x.cantidad) * CHICLES_BOLSA)
+                        ).toLocaleString()} u.
+                      </b>
+                    </td>
                     <td className="n text-ok"><b>{money(x.costo_total)}</b></td>
                     <td>{x.notas || '—'}</td>
                   </tr>

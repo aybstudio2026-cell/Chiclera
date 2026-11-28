@@ -88,9 +88,9 @@ export default function App() {
         </div>
 
         <div className="nav-group">
-          <div className="nav-section-title">COMPRAS E INVENTARIO</div>
+          <div className="nav-section-title">GASTOS E INVENTARIO</div>
           <nav>
-            <NavLink to="/compras">🛒 Registro de compras</NavLink>
+            <NavLink to="/compras">💸 Registro de gastos</NavLink>
             <NavLink to="/inventario">📦 Stock de chicles</NavLink>
             <NavLink to="/maquinas">🎰 Máquinas</NavLink>
             <NavLink to="/mantenimiento">🔧 Mantenimiento</NavLink>
@@ -175,10 +175,10 @@ export default function App() {
               </NavLink>
             </div>
 
-            <div className="drawer-section-title" style={{ marginTop: '14px' }}>COMPRAS Y CONTROL</div>
+            <div className="drawer-section-title" style={{ marginTop: '14px' }}>GASTOS Y CONTROL</div>
             <div className="drawer-links">
               <NavLink to="/compras" onClick={() => setMenuAbierto(false)}>
-                🛒 Registro de Compras
+                💸 Registro de Gastos
               </NavLink>
               <NavLink to="/maquinas" onClick={() => setMenuAbierto(false)}>
                 🎰 Catálogo de Máquinas

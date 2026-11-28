@@ -42,9 +42,10 @@ create table chiclera.revisiones (
 
 create table chiclera.compras (
   id uuid primary key default gen_random_uuid(),
-  tipo text not null check (tipo in ('maquina','chicles')),
+  tipo text not null check (tipo in ('maquina','chicles','envio','accesorio','repuesto','otro')),
   codigo text,
-  cantidad int not null check (cantidad > 0),
+  cantidad int not null default 1 check (cantidad > 0),
+  unidades int,                                       -- cantidad exacta de chicles recibidos (ej: 515)
   costo_total numeric(10,2) not null,
   fecha date not null default current_date,
   notas text,
@@ -121,5 +122,11 @@ end $$;
 --    drop policy if exists "acceso_ideas_negocio" on chiclera.ideas_negocio;
 --    create policy "acceso_ideas_negocio" on chiclera.ideas_negocio for all to anon, authenticated using (true) with check (true);
 --    grant all on chiclera.ideas_negocio to anon, authenticated, service_role;
+--
+-- 5) Si ya tenías la base de datos y quieres habilitar Gastos (envíos, cadenas) y unidades exactas de chicles, corre esto:
+--    alter table chiclera.compras drop constraint if exists compras_tipo_check;
+--    alter table chiclera.compras add constraint compras_tipo_check check (tipo in ('maquina', 'chicles', 'envio', 'accesorio', 'repuesto', 'otro'));
+--    alter table chiclera.compras add column if not exists unidades int;
+
 
 
