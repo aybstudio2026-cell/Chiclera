@@ -2,9 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTable } from '../hooks/useTable'
 import { Err, Page, Stat } from '../components'
-import { calcRevision, hoy, money, sum } from '../lib/calc'
-
-const COSTO_UNITARIO_CHICLE = 90 / 500 // S/ 0.18 por chicle (bolsa de 500 a S/ 90)
+import { COSTO_UNITARIO_CHICLE, calcRevision, hoy, money, sum } from '../lib/calc'
 
 export default function Revisiones() {
   const { id } = useParams()
@@ -62,7 +60,13 @@ export default function Revisiones() {
     }
   }
 
-  const copiarWhatsAppUltima = (item) => {
+  const limpiarTelefono = (tel) => {
+    if (!tel) return ''
+    const soloNum = String(tel).replace(/[^0-9]/g, '')
+    return soloNum.length === 9 && soloNum.startsWith('9') ? '51' + soloNum : soloNum
+  }
+
+  const enviarWhatsAppUltima = (item) => {
     const chiclesUnid = Math.round(Number(item.inversion_chicles || 0) / COSTO_UNITARIO_CHICLE)
     const texto = `🍬 *REVISIÓN CHICLERA - ${neg.negocio.toUpperCase()}* 🍬
 📅 *Fecha:* ${item.fecha}
@@ -75,9 +79,15 @@ export default function Revisiones() {
 👉 *TU PAGO EN EFECTIVO/TRANSFERENCIA:* *${money(item.parte_dueno)}*
 ¡Muchas gracias! 🙌`
 
-    navigator.clipboard.writeText(texto)
-    setCopiado(true)
-    setTimeout(() => setCopiado(false), 2500)
+    const tel = limpiarTelefono(neg?.telefono)
+    if (tel) {
+      window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto)}`, '_blank')
+    } else {
+      navigator.clipboard.writeText(texto)
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 2500)
+      alert('Mensaje copiado al portapapeles para pegarlo en WhatsApp.')
+    }
   }
 
   return (
@@ -268,11 +278,11 @@ export default function Revisiones() {
                   <div style={{ marginTop: '8px', borderTop: '1px solid var(--line)', paddingTop: '8px' }}>
                     <button
                       type="button"
-                      className="btn alt"
-                      style={{ width: '100%', fontSize: '12px', padding: '6px' }}
-                      onClick={() => copiarWhatsAppUltima(x)}
+                      className="btn"
+                      style={{ width: '100%', fontSize: '12px', padding: '7px', background: '#25D366', color: '#fff', fontWeight: '700' }}
+                      onClick={() => enviarWhatsAppUltima(x)}
                     >
-                      {copiado ? '✅ ¡Copiado!' : '📲 Enviar resumen por WhatsApp'}
+                      {copiado ? '✅ ¡Copiado al portapapeles!' : '📲 Enviar comprobante por WhatsApp'}
                     </button>
                   </div>
                 </div>

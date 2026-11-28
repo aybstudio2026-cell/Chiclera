@@ -127,6 +127,10 @@ end $$;
 --    alter table chiclera.compras drop constraint if exists compras_tipo_check;
 --    alter table chiclera.compras add constraint compras_tipo_check check (tipo in ('maquina', 'chicles', 'envio', 'accesorio', 'repuesto', 'otro'));
 --    alter table chiclera.compras add column if not exists unidades int;
+--
+-- 6) Para sincronizar la zona horaria del servidor de base de datos con Lima, Perú (UTC-5) y evitar desfaces después de las 7:00 PM:
+--    alter database postgres set timezone to 'America/Lima';
+
 
 
 

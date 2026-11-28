@@ -1,3 +1,5 @@
+import { hoy } from './calc'
+
 /**
  * Utilidad para exportar datos a Excel (.csv con BOM UTF-8)
  * Abre directamente en Microsoft Excel, Google Sheets, LibreOffice, etc.
@@ -44,7 +46,7 @@ export function exportToExcel({ filename, headers, rows }) {
   const link = document.createElement('a')
   link.setAttribute('href', url)
   const cleanName = (filename || 'exportacion').replace(/[^a-zA-Z0-9_\-]/g, '_')
-  const dateStr = new Date().toISOString().slice(0, 10)
+  const dateStr = hoy()
   link.setAttribute('download', `${cleanName}_${dateStr}.csv`)
   document.body.appendChild(link)
   link.click()
